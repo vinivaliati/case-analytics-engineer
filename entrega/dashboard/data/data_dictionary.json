@@ -1,0 +1,1238 @@
+{
+  "generated_at": "2026-10-25T17:45:09+00:00",
+  "source": "dbt manifest.json (descrições e testes de schema.yml) + esquema do DuckDB",
+  "how_to_read": "Star schema agregado. Fatos 'agg_*' ligam às dimensões por *_key. Marts 'mart_*' respondem perguntas específicas da diretoria. Nenhuma tabela é linha a linha de cliente, conta ou pedido.",
+  "project_vars": {},
+  "tables": {
+    "agg_crm_events_monthly": {
+      "file": "agg_crm_events_monthly.parquet",
+      "layer": "serving",
+      "description": "Eventos de CRM agregados. Grão: mês x campanha x tipo de evento x canal.",
+      "meta": {
+        "grain": "mês x campaign_key x event_name x campaign_type",
+        "business_questions": [
+          "Quantos e-mails e pushes foram enviados, vistos e clicados por mês e campanha?"
+        ]
+      },
+      "rows": 502,
+      "model_tests": [
+        "unique_combination_of_columns"
+      ],
+      "columns": {
+        "crm_event_agg_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash das colunas do grão.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "month_date_key": {
+          "type": "INTEGER",
+          "description": "FK para dim_month (mês no fuso local).",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "campaign_key": {
+          "type": "VARCHAR",
+          "description": "FK para dim_campaign ('-1' = sem campanha).",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "event_name": {
+          "type": "VARCHAR",
+          "description": "Notification Sent, Viewed, Clicked, Failed, Push Impressions ou Order Approved.",
+          "tests": [],
+          "meta": {}
+        },
+        "campaign_type": {
+          "type": "VARCHAR",
+          "description": "Canal (Email, Push, InApp...). 'Sem canal' em Order Approved.",
+          "tests": [],
+          "meta": {}
+        },
+        "events_count": {
+          "type": "BIGINT",
+          "description": "Quantidade de eventos.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "agg_points_balance_monthly": {
+      "file": "agg_points_balance_monthly.parquet",
+      "layer": "serving",
+      "description": "Saldo de pontos agregado. Grão: mês x nível de cartão (atual do cliente). Saldo é semi-aditivo: some entre níveis, nunca entre meses.",
+      "meta": {
+        "grain": "mês x card_class_key",
+        "business_questions": [
+          "Qual o saldo de pontos em aberto (passivo) por mês e nível?",
+          "Quantos clientes têm saldo?"
+        ]
+      },
+      "rows": 78,
+      "model_tests": [
+        "unique_combination_of_columns"
+      ],
+      "columns": {
+        "points_balance_agg_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash das colunas do grão.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "month_date_key": {
+          "type": "INTEGER",
+          "description": "FK para dim_month.",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "card_class_key": {
+          "type": "VARCHAR",
+          "description": "FK para dim_card_class.",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "customers_in_program": {
+          "type": "BIGINT",
+          "description": "Clientes com algum movimento até o mês. Aditiva entre níveis no mesmo mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "customers_with_balance": {
+          "type": "BIGINT",
+          "description": "Clientes com saldo positivo ao fim do mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "closing_balance_points": {
+          "type": "BIGINT",
+          "description": "Saldo ao fim do mês (semi-aditivo).",
+          "tests": [],
+          "meta": {}
+        },
+        "credited_points": {
+          "type": "BIGINT",
+          "description": "Pontos creditados no mês (programa novo).",
+          "tests": [],
+          "meta": {}
+        },
+        "migrated_points": {
+          "type": "BIGINT",
+          "description": "Saldo migrado creditado no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "redeemed_points": {
+          "type": "BIGINT",
+          "description": "Pontos resgatados no mês (débito do ledger, em módulo).",
+          "tests": [],
+          "meta": {}
+        },
+        "order_refund_points": {
+          "type": "BIGINT",
+          "description": "Pontos devolvidos por estorno de pedido no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "expired_points": {
+          "type": "BIGINT",
+          "description": "Pontos do programa novo expirados no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "expired_migrated_points": {
+          "type": "BIGINT",
+          "description": "Pontos migrados expirados no mês.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "agg_points_movements_monthly": {
+      "file": "agg_points_movements_monthly.parquet",
+      "layer": "serving",
+      "description": "Movimentos do ledger agregados. Grão: mês x operação x nível de cartão (atual do cliente).",
+      "meta": {
+        "grain": "mês x operation_key x card_class_key",
+        "business_questions": [
+          "Quantos pontos foram creditados, resgatados, estornados e expirados por mês?",
+          "Quanto do volume é de saldo migrado?"
+        ]
+      },
+      "rows": 288,
+      "model_tests": [
+        "unique_combination_of_columns"
+      ],
+      "columns": {
+        "points_movement_agg_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash das colunas do grão.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "month_date_key": {
+          "type": "INTEGER",
+          "description": "FK para dim_month.",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "operation_key": {
+          "type": "VARCHAR",
+          "description": "FK para dim_operation.",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "card_class_key": {
+          "type": "VARCHAR",
+          "description": "FK para dim_card_class.",
+          "tests": [
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "movements_count": {
+          "type": "BIGINT",
+          "description": "Quantidade de movimentos no ledger.",
+          "tests": [],
+          "meta": {}
+        },
+        "points": {
+          "type": "BIGINT",
+          "description": "Soma com sinal (+ crédito, - débito).",
+          "tests": [],
+          "meta": {}
+        },
+        "credit_points": {
+          "type": "BIGINT",
+          "description": "Parte positiva.",
+          "tests": [],
+          "meta": {}
+        },
+        "debit_points": {
+          "type": "BIGINT",
+          "description": "Parte negativa, em módulo.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "agg_redemptions_monthly": {
+      "file": "agg_redemptions_monthly.parquet",
+      "layer": "serving",
+      "description": "Resgates agregados. Grão: mês x produto x nível de cartão (atual do cliente) x canal x status do item. Use net_redeemed_points com is_effective_redemption = true para as metas.",
+      "meta": {
+        "grain": "mês x product_key x card_class_key x sales_channel x item_status",
+        "business_questions": [
+          "Quantos pontos foram resgatados por categoria, fornecedor, nível ou canal?",
+          "Qual a participação de aéreas, varejo e Pix nos resgates?",
+          "Quanto custou cada modalidade em R$?"
+        ]
+      },
+      "rows": 2484,
+      "model_tests": [
+        "unique_combination_of_columns"
+      ],
+      "columns": {
+        "redemption_agg_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash das colunas do grão.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "month_date_key": {
+          "type": "INTEGER",
+          "description": "FK para dim_month.",
+          "tests": [
+            "not_null",
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "product_key": {
+          "type": "VARCHAR",
+          "description": "FK para dim_product (fornecedor, tipo, categoria de meta).",
+          "tests": [
+            "not_null",
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "card_class_key": {
+          "type": "VARCHAR",
+          "description": "FK para dim_card_class. Nível ATUAL do cliente (decisão documentada).",
+          "tests": [
+            "not_null",
+            "relationships"
+          ],
+          "meta": {}
+        },
+        "sales_channel": {
+          "type": "VARCHAR",
+          "description": "APP ou WEB.",
+          "tests": [],
+          "meta": {}
+        },
+        "item_status": {
+          "type": "VARCHAR",
+          "description": "Status do item.",
+          "tests": [],
+          "meta": {}
+        },
+        "is_effective_redemption": {
+          "type": "BOOLEAN",
+          "description": "Resgate efetivo: APROVADO e não é compra de pontos.",
+          "tests": [],
+          "meta": {}
+        },
+        "items_count": {
+          "type": "BIGINT",
+          "description": "Quantidade de itens (aditiva).",
+          "tests": [],
+          "meta": {}
+        },
+        "net_redeemed_points": {
+          "type": "BIGINT",
+          "description": "MÉTRICA OFICIAL de pontos resgatados (líquida de devoluções). Zero quando não é resgate efetivo.",
+          "tests": [],
+          "meta": {}
+        },
+        "points_debited": {
+          "type": "BIGINT",
+          "description": "Pontos debitados em redeemed_points (bruto).",
+          "tests": [],
+          "meta": {}
+        },
+        "paid_points": {
+          "type": "BIGINT",
+          "description": "Pontos informados no pedido (inclui itens não pagos).",
+          "tests": [],
+          "meta": {}
+        },
+        "refunded_points": {
+          "type": "BIGINT",
+          "description": "Pontos devolvidos.",
+          "tests": [],
+          "meta": {}
+        },
+        "product_value_brl": {
+          "type": "DECIMAL(38,2)",
+          "description": "Valor dos produtos em R$. No Pix, é o dinheiro creditado ao cliente.",
+          "tests": [],
+          "meta": {}
+        },
+        "customer_cash_brl": {
+          "type": "DECIMAL(38,2)",
+          "description": "Parte paga pelo cliente em dinheiro (R$).",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "dim_campaign": {
+      "file": "dim_campaign.parquet",
+      "layer": "core",
+      "description": "Campanhas do CRM. Grão: 1 linha por campaign_id. Linha '-1' = evento sem campanha.",
+      "meta": {
+        "grain": "1 linha por campanha do CRM",
+        "business_questions": [
+          "Quais campanhas existiram e quando?"
+        ]
+      },
+      "rows": 128,
+      "model_tests": [],
+      "columns": {
+        "campaign_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash de campaign_id.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "campaign_id": {
+          "type": "VARCHAR",
+          "description": "Identificador na ferramenta de CRM.",
+          "tests": [],
+          "meta": {}
+        },
+        "campaign_name": {
+          "type": "VARCHAR",
+          "description": "Nome mais frequente em event_properties.campaign_name.",
+          "tests": [],
+          "meta": {}
+        },
+        "campaign_channels": {
+          "type": "VARCHAR",
+          "description": "Canais em que a campanha rodou.",
+          "tests": [],
+          "meta": {}
+        },
+        "first_event_at": {
+          "type": "TIMESTAMP",
+          "description": "Primeiro evento da campanha (horário local).",
+          "tests": [],
+          "meta": {}
+        },
+        "last_event_at": {
+          "type": "TIMESTAMP",
+          "description": "Último evento da campanha (horário local).",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "dim_card_class": {
+      "file": "dim_card_class.parquet",
+      "layer": "serving",
+      "description": "Níveis de cartão. Grão: 1 linha por nível, mais '-1' (desconhecido).",
+      "meta": {
+        "grain": "1 linha por nível de cartão",
+        "business_questions": [
+          "Qual a ordem dos níveis?"
+        ]
+      },
+      "rows": 7,
+      "model_tests": [],
+      "columns": {
+        "card_class_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash do nome do nível.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "card_class": {
+          "type": "VARCHAR",
+          "description": "Essencial, Gold, Platinum, Platinum Elo, Infinite, Black ou Desconhecido.",
+          "tests": [],
+          "meta": {}
+        },
+        "card_class_rank": {
+          "type": "INTEGER",
+          "description": "1 = mais simples ... 6 = mais alto.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "dim_month": {
+      "file": "dim_month.parquet",
+      "layer": "serving",
+      "description": "Meses com dados. Grão: 1 linha por mês até set/2026. Conformada com dim_date.",
+      "meta": {
+        "grain": "1 linha por mês",
+        "business_questions": [
+          "Em que fase do Pix está cada mês?",
+          "Quais meses têm eventos atípicos?"
+        ]
+      },
+      "rows": 13,
+      "model_tests": [],
+      "columns": {
+        "month_date_key": {
+          "type": "INTEGER",
+          "description": "PK. Primeiro dia do mês como inteiro yyyymmdd (ex.: 20260601). FK usada por todos os agregados.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "month_start": {
+          "type": "DATE",
+          "description": "Primeiro dia do mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "year_month": {
+          "type": "VARCHAR",
+          "description": "Mês no formato yyyy-mm.",
+          "tests": [],
+          "meta": {}
+        },
+        "year": {
+          "type": "BIGINT",
+          "description": "Ano.",
+          "tests": [],
+          "meta": {}
+        },
+        "quarter": {
+          "type": "BIGINT",
+          "description": "Trimestre (1 a 4).",
+          "tests": [],
+          "meta": {}
+        },
+        "month": {
+          "type": "BIGINT",
+          "description": "Mês (1 a 12).",
+          "tests": [],
+          "meta": {}
+        },
+        "pix_phase": {
+          "type": "VARCHAR",
+          "description": "antes_do_pix, mes_do_lancamento (mai/2026) ou depois_do_pix.",
+          "tests": [
+            "accepted_values"
+          ],
+          "meta": {}
+        },
+        "is_in_pre_pix_baseline": {
+          "type": "BOOLEAN",
+          "description": "Mês dentro da linha de base antes do Pix (fev a mai/2026).",
+          "tests": [],
+          "meta": {}
+        },
+        "has_atypical_day": {
+          "type": "BOOLEAN",
+          "description": "Mês com dia atípico (jan/2026: pico de 12/01).",
+          "tests": [],
+          "meta": {}
+        },
+        "month_events": {
+          "type": "VARCHAR",
+          "description": "Eventos de negócio do mês.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "dim_operation": {
+      "file": "dim_operation.parquet",
+      "layer": "core",
+      "description": "Tipos de movimento do ledger. Grão: 1 linha por operation_code.",
+      "meta": {
+        "grain": "1 linha por tipo de operação do ledger",
+        "business_questions": [
+          "Que tipos de movimento de pontos existem?"
+        ]
+      },
+      "rows": 7,
+      "model_tests": [],
+      "columns": {
+        "operation_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash de operation_code.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "operation_code": {
+          "type": "INTEGER",
+          "description": "Código na origem.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "operation_name": {
+          "type": "VARCHAR",
+          "description": "CREDITO, RESGATE, EXPIRACAO, ESTORNO_CREDITO, ESTORNO_PEDIDO, CREDITO_MIGRACAO ou EXPIRACAO_MIGRACAO.",
+          "tests": [],
+          "meta": {}
+        },
+        "direction": {
+          "type": "VARCHAR",
+          "description": "CREDIT ou DEBIT.",
+          "tests": [],
+          "meta": {}
+        },
+        "is_migration": {
+          "type": "BOOLEAN",
+          "description": "Movimento ligado aos saldos migrados do programa anterior.",
+          "tests": [],
+          "meta": {}
+        },
+        "is_expiration": {
+          "type": "BOOLEAN",
+          "description": "Movimento de expiração de pontos.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "dim_product": {
+      "file": "dim_product.parquet",
+      "layer": "core",
+      "description": "Produtos de resgate. Grão: 1 linha por fornecedor x responsável x tipo de produto x categoria macro.",
+      "meta": {
+        "grain": "1 linha por fornecedor x responsável x tipo x categoria",
+        "business_questions": [
+          "Quais fornecedores e modalidades existem?",
+          "Como cada produto conta para as metas?"
+        ]
+      },
+      "rows": 12,
+      "model_tests": [],
+      "columns": {
+        "product_key": {
+          "type": "VARCHAR",
+          "description": "PK. Hash das quatro colunas do grão.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "supplier_name": {
+          "type": "VARCHAR",
+          "description": "Fornecedor.",
+          "tests": [],
+          "meta": {}
+        },
+        "supplier_responsible": {
+          "type": "VARCHAR",
+          "description": "Fornecedor responsável (difere em revendas).",
+          "tests": [],
+          "meta": {}
+        },
+        "product_type": {
+          "type": "VARCHAR",
+          "description": "PASSAGEM, PRODUTO, TRANSFERENCIA ou COMPRA_PONTOS.",
+          "tests": [],
+          "meta": {}
+        },
+        "category_macro": {
+          "type": "VARCHAR",
+          "description": "Categoria macro da origem (Aereas, Varejo, Cashback). Para metas use goal_category_contract.",
+          "tests": [],
+          "meta": {}
+        },
+        "goal_category_contract": {
+          "type": "VARCHAR",
+          "description": "Categoria oficial das metas (definição do operador): aereas, varejo, pix, fora_da_meta. Tabela de referência goal_categories.",
+          "tests": [
+            "not_null"
+          ],
+          "meta": {}
+        },
+        "goal_category_strict": {
+          "type": "VARCHAR",
+          "description": "Categoria de sensibilidade: varejo só com produto. Tabela de referência goal_categories.",
+          "tests": [
+            "not_null"
+          ],
+          "meta": {}
+        },
+        "is_redemption": {
+          "type": "BOOLEAN",
+          "description": "Entra no denominador das metas. Falso só para compra de pontos.",
+          "tests": [
+            "not_null"
+          ],
+          "meta": {}
+        },
+        "goal_category_rationale": {
+          "type": "VARCHAR",
+          "description": "Justificativa da classificação.",
+          "tests": [],
+          "meta": {}
+        },
+        "is_pix": {
+          "type": "BOOLEAN",
+          "description": "Resgate via Pontos no Pix (fornecedor 'Pix Pontua+').",
+          "tests": [],
+          "meta": {}
+        },
+        "is_points_purchase": {
+          "type": "BOOLEAN",
+          "description": "Compra de pontos com dinheiro: não é resgate, não debita pontos.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_crm_pix_launch_adoption": {
+      "file": "mart_crm_pix_launch_adoption.parquet",
+      "layer": "analytics",
+      "description": "Adoção do Pix por exposição à comunicação de lançamento. Grão: 1 linha por segmento de exposição x histórico de resgate. DESCRITIVO: sem grupo de controle, não mede efeito causal. Adoção = cliente com ao menos 1 resgate Pix efetivo até set/2026.",
+      "meta": {
+        "grain": "segmento de exposição x had_prior_redemption",
+        "business_questions": [
+          "A comunicação de lançamento explica a adoção do Pix?"
+        ],
+        "caveat": "Descritivo. control_group 100% vazio: não há grupo de controle para efeito causal."
+      },
+      "rows": 8,
+      "model_tests": [
+        "unique_combination_of_columns"
+      ],
+      "columns": {
+        "exposure_segment": {
+          "type": "VARCHAR",
+          "description": "Exposição ao CRM na janela do lançamento (27/05 a 04/06/2026).",
+          "tests": [
+            "not_null"
+          ],
+          "meta": {}
+        },
+        "had_prior_redemption": {
+          "type": "BOOLEAN",
+          "description": "Cliente já tinha feito resgate efetivo antes do lançamento do Pix. Controla parte do viés de engajamento.",
+          "tests": [],
+          "meta": {}
+        },
+        "customers": {
+          "type": "BIGINT",
+          "description": "Clientes no segmento.",
+          "tests": [],
+          "meta": {}
+        },
+        "pix_adopters": {
+          "type": "BIGINT",
+          "description": "Clientes do segmento com ao menos 1 Pix efetivo.",
+          "tests": [],
+          "meta": {}
+        },
+        "pix_adoption_pct": {
+          "type": "DOUBLE",
+          "description": "% de clientes do segmento que usaram o Pix.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_crm_pix_launch_timing": {
+      "file": "mart_crm_pix_launch_timing.parquet",
+      "layer": "analytics",
+      "description": "Tempo entre o e-mail de lançamento e o primeiro Pix, para quem recebeu e usou. Grão: 1 linha por janela. Descritivo.",
+      "meta": {
+        "grain": "1 linha por janela de tempo",
+        "business_questions": [
+          "Quem recebeu o e-mail de lançamento usou o Pix logo em seguida?"
+        ]
+      },
+      "rows": 4,
+      "model_tests": [],
+      "columns": {
+        "timing_window": {
+          "type": "VARCHAR",
+          "description": "PK. Janela entre o primeiro envio do e-mail e o primeiro Pix efetivo.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "customers": {
+          "type": "BIGINT",
+          "description": "Clientes na janela.",
+          "tests": [],
+          "meta": {}
+        },
+        "customers_pct": {
+          "type": "DOUBLE",
+          "description": "% dos clientes que receberam o e-mail e usaram o Pix.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_goal_attainment_monthly": {
+      "file": "mart_goal_attainment_monthly.parquet",
+      "layer": "analytics",
+      "description": "Metas contratuais por mês. Grão: 1 linha por mês. Base: resgates efetivos (APROVADO, líquido de devoluções), classificados pela tabela de referência goal_categories. Metas: aéreas >= 50% e varejo >= 20% dos pontos resgatados.",
+      "meta": {
+        "grain": "1 linha por mês",
+        "business_questions": [
+          "As metas de aéreas (>= 50%) e varejo (>= 20%) estão sendo cumpridas?",
+          "Como as metas ficariam sem o Pix no denominador?",
+          "Nossos números batem com o relatório do operador?"
+        ]
+      },
+      "rows": 12,
+      "model_tests": [
+        "expression_is_true"
+      ],
+      "columns": {
+        "month_start": {
+          "type": "DATE",
+          "description": "PK. Primeiro dia do mês.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "redeemed_points": {
+          "type": "BIGINT",
+          "description": "Pontos resgatados no mês (denominador das metas, inclui Pix).",
+          "tests": [],
+          "meta": {}
+        },
+        "aereas_points": {
+          "type": "BIGINT",
+          "description": "Pontos resgatados em aéreas (visão contrato).",
+          "tests": [],
+          "meta": {}
+        },
+        "varejo_points": {
+          "type": "BIGINT",
+          "description": "Pontos resgatados em varejo (visão contrato).",
+          "tests": [],
+          "meta": {}
+        },
+        "pix_points": {
+          "type": "BIGINT",
+          "description": "Pontos resgatados via Pix.",
+          "tests": [],
+          "meta": {}
+        },
+        "aereas_pct": {
+          "type": "DOUBLE",
+          "description": "% de aéreas na visão contrato (definição do operador).",
+          "tests": [],
+          "meta": {}
+        },
+        "varejo_pct": {
+          "type": "DOUBLE",
+          "description": "% de varejo na visão contrato (inclui transferências a parceiros e Decola Viagens).",
+          "tests": [],
+          "meta": {}
+        },
+        "pix_pct": {
+          "type": "DOUBLE",
+          "description": "% de Pix nos pontos resgatados.",
+          "tests": [],
+          "meta": {}
+        },
+        "varejo_strict_pct": {
+          "type": "DOUBLE",
+          "description": "% de varejo na visão estrita (só produto, sem transferências e sem agência de viagens). Sensibilidade.",
+          "tests": [],
+          "meta": {}
+        },
+        "aereas_pct_ex_pix": {
+          "type": "DOUBLE",
+          "description": "% de aéreas se o Pix ficasse fora do denominador. Cenário para discutir o contrato, não é a regra atual.",
+          "tests": [],
+          "meta": {}
+        },
+        "varejo_pct_ex_pix": {
+          "type": "DOUBLE",
+          "description": "% de varejo se o Pix ficasse fora do denominador. Cenário.",
+          "tests": [],
+          "meta": {}
+        },
+        "aereas_pct_ex_atypical": {
+          "type": "DOUBLE",
+          "description": "% de aéreas sem os dias atípicos (calendar_events). Relevante só em jan/2026.",
+          "tests": [],
+          "meta": {}
+        },
+        "meets_aereas_goal": {
+          "type": "BOOLEAN",
+          "description": "Meta de aéreas (>= 50%) cumprida na visão contrato.",
+          "tests": [],
+          "meta": {}
+        },
+        "meets_varejo_goal": {
+          "type": "BOOLEAN",
+          "description": "Meta de varejo (>= 20%) cumprida na visão contrato.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_aereas_pct": {
+          "type": "DECIMAL(5,2)",
+          "description": "% de aéreas segundo o relatório do operador.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_varejo_pct": {
+          "type": "DECIMAL(5,2)",
+          "description": "% de varejo segundo o relatório do operador.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_pix_pct": {
+          "type": "DECIMAL(5,2)",
+          "description": "% de Pix segundo o relatório do operador (usa pontos de todos os status).",
+          "tests": [],
+          "meta": {}
+        },
+        "aereas_pct_diff_vs_operator": {
+          "type": "DOUBLE",
+          "description": "Nosso % de aéreas menos o do operador, em p.p.",
+          "tests": [],
+          "meta": {}
+        },
+        "varejo_pct_diff_vs_operator": {
+          "type": "DOUBLE",
+          "description": "Nosso % de varejo menos o do operador, em p.p.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_pix_reconciliation_monthly": {
+      "file": "mart_pix_reconciliation_monthly.parquet",
+      "layer": "analytics",
+      "description": "Reconciliação do Pix com o relatório do operador. Grão: 1 linha por mês com Pix. Testa a afirmação \"o Pix sai a ~R$ 0,016 por ponto\": o operador divide R$ pagos (≈ aprovados) por pontos de TODOS os status.",
+      "meta": {
+        "grain": "1 linha por mês com Pix",
+        "business_questions": [
+          "Quanto o Pix custa por ponto?",
+          "Por que o relatório do operador mostra ~R$ 0,016 por ponto?"
+        ]
+      },
+      "rows": 5,
+      "model_tests": [
+        "expression_is_true"
+      ],
+      "columns": {
+        "month_start": {
+          "type": "DATE",
+          "description": "PK. Primeiro dia do mês.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "effective_transactions": {
+          "type": "BIGINT",
+          "description": "Resgates Pix efetivos (APROVADO) no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "effective_points": {
+          "type": "BIGINT",
+          "description": "Pontos dos resgates Pix efetivos, líquidos de devoluções.",
+          "tests": [],
+          "meta": {}
+        },
+        "effective_brl": {
+          "type": "DECIMAL(38,2)",
+          "description": "R$ creditados aos clientes nos resgates Pix efetivos.",
+          "tests": [],
+          "meta": {}
+        },
+        "effective_brl_per_point": {
+          "type": "DOUBLE",
+          "description": "R$ creditados por ponto nos resgates efetivos. É o custo real do Pix por ponto.",
+          "tests": [],
+          "meta": {}
+        },
+        "all_status_transactions": {
+          "type": "BIGINT",
+          "description": "Itens Pix de todos os status (inclui não pagos).",
+          "tests": [],
+          "meta": {}
+        },
+        "all_status_points": {
+          "type": "BIGINT",
+          "description": "Pontos de todos os itens Pix, inclusive cancelados, inválidos, estornados e aguardando.",
+          "tests": [],
+          "meta": {}
+        },
+        "non_effective_transactions": {
+          "type": "BIGINT",
+          "description": "Itens Pix que não viraram resgate.",
+          "tests": [],
+          "meta": {}
+        },
+        "non_effective_points": {
+          "type": "BIGINT",
+          "description": "Pontos de itens Pix que não viraram resgate (não foram pagos).",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_transactions": {
+          "type": "INTEGER",
+          "description": "Transações Pix segundo o operador.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_points": {
+          "type": "BIGINT",
+          "description": "Pontos Pix segundo o operador.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_brl": {
+          "type": "DECIMAL(18,2)",
+          "description": "R$ Pix segundo o operador.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_brl_per_point": {
+          "type": "DOUBLE",
+          "description": "R$ / pontos do relatório do operador (~0,016).",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_transactions_match_all_status": {
+          "type": "BOOLEAN",
+          "description": "As transações do operador batem exatamente com os itens Pix de todos os status.",
+          "tests": [
+            "accepted_values"
+          ],
+          "meta": {}
+        },
+        "operator_points_match_all_status": {
+          "type": "BOOLEAN",
+          "description": "Os pontos do operador batem exatamente com os pontos Pix de todos os status.",
+          "tests": [
+            "accepted_values"
+          ],
+          "meta": {}
+        },
+        "operator_brl_diff_vs_effective": {
+          "type": "DECIMAL(38,2)",
+          "description": "R$ do operador menos R$ dos resgates efetivos.",
+          "tests": [],
+          "meta": {}
+        },
+        "operator_brl_diff_vs_effective_pct": {
+          "type": "DOUBLE",
+          "description": "Diferença entre o R$ do operador e o R$ dos resgates efetivos, em %. Entre -0,2% e -0,7%; sem regra que explique (pergunta ao operador).",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_points_flow_monthly": {
+      "file": "mart_points_flow_monthly.parquet",
+      "layer": "analytics",
+      "description": "Fluxo de pontos e breakage. Grão: 1 linha por mês. Breakage segue a definição de mercado (expirados / emitidos, por origem); ver docs/benchmark_breakage.md.",
+      "meta": {
+        "grain": "1 linha por mês",
+        "business_questions": [
+          "Qual é o breakage do programa?",
+          "De onde vem o número de 40% de breakage?",
+          "Qual o saldo de pontos em aberto?"
+        ]
+      },
+      "rows": 13,
+      "model_tests": [],
+      "columns": {
+        "month_start": {
+          "type": "DATE",
+          "description": "PK. Primeiro dia do mês.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "credited_points": {
+          "type": "BIGINT",
+          "description": "Pontos creditados pelo programa novo no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "migrated_points": {
+          "type": "BIGINT",
+          "description": "Saldo migrado do programa anterior creditado no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "redeemed_points": {
+          "type": "BIGINT",
+          "description": "Pontos debitados por resgate no mês (bruto, em módulo).",
+          "tests": [],
+          "meta": {}
+        },
+        "order_refund_points": {
+          "type": "BIGINT",
+          "description": "Pontos devolvidos por estorno de pedido.",
+          "tests": [],
+          "meta": {}
+        },
+        "expired_points": {
+          "type": "BIGINT",
+          "description": "Pontos do programa novo expirados no mês. Zero até a extração.",
+          "tests": [
+            "accepted_values"
+          ],
+          "meta": {}
+        },
+        "expired_migrated_points": {
+          "type": "BIGINT",
+          "description": "Pontos migrados expirados no mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "total_expired_points": {
+          "type": "BIGINT",
+          "description": "Total de pontos expirados no mês (novo + migrado).",
+          "tests": [],
+          "meta": {}
+        },
+        "opening_balance_points": {
+          "type": "BIGINT",
+          "description": "Saldo em aberto no início do mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "closing_balance_points": {
+          "type": "BIGINT",
+          "description": "Saldo em aberto ao fim do mês (passivo de pontos).",
+          "tests": [],
+          "meta": {}
+        },
+        "cum_credited_points": {
+          "type": "BIGINT",
+          "description": "Pontos creditados acumulados desde o início.",
+          "tests": [],
+          "meta": {}
+        },
+        "cum_migrated_points": {
+          "type": "BIGINT",
+          "description": "Pontos migrados acumulados.",
+          "tests": [],
+          "meta": {}
+        },
+        "breakage_new_program_realized_pct": {
+          "type": "DOUBLE",
+          "description": "Breakage realizado do programa novo (expirados / creditados, acumulado). 0% porque nenhum crédito venceu (validade de 24 meses, primeiro vencimento em 25/09/2027).",
+          "tests": [],
+          "meta": {}
+        },
+        "breakage_migrated_realized_pct": {
+          "type": "DOUBLE",
+          "description": "Breakage realizado do saldo migrado (expirados / migrados, acumulado). 19,8% em set/2026, subindo ~2 p.p. por mês.",
+          "tests": [],
+          "meta": {}
+        },
+        "expiration_rate_on_opening_balance_pct": {
+          "type": "DOUBLE",
+          "description": "Pontos expirados no mês / saldo de abertura. Indicador de acompanhamento, não é breakage.",
+          "tests": [],
+          "meta": {}
+        },
+        "expired_to_redeemed_pct": {
+          "type": "DOUBLE",
+          "description": "Expirados no mês / resgatados no mês. NÃO é breakage. Existe para testar a hipótese do '40%': 36% a 44% em fev-abr/2026.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_redemption_economics": {
+      "file": "mart_redemption_economics.parquet",
+      "layer": "analytics",
+      "description": "Custo por ponto por modalidade, antes e depois do Pix. Grão: 1 linha por período x categoria estrita. HIPÓTESE DECLARADA: custo ≈ (valor do produto - dinheiro pago pelo cliente) / pontos. Preço pago pelo banco por ponto não está nos dados; o enunciado diz que é menor que o custo de aéreas.",
+      "meta": {
+        "grain": "period x goal_category_strict",
+        "business_questions": [
+          "Quanto custa cada modalidade de resgate por ponto?",
+          "O Pix substituiu ou somou resgates?"
+        ],
+        "caveat": "Custo estimado pelo valor do produto; preço do banco por ponto desconhecido."
+      },
+      "rows": 9,
+      "model_tests": [
+        "unique_combination_of_columns"
+      ],
+      "columns": {
+        "period": {
+          "type": "VARCHAR",
+          "description": "antes_do_pix (01/02 a 26/05/2026) ou depois_do_pix (27/05 a 30/09/2026).",
+          "tests": [
+            "accepted_values",
+            "not_null"
+          ],
+          "meta": {}
+        },
+        "goal_category_strict": {
+          "type": "VARCHAR",
+          "description": "Modalidade na visão estrita: aereas, varejo, agencia_viagens, transferencia_parceiro, pix.",
+          "tests": [],
+          "meta": {}
+        },
+        "redemptions": {
+          "type": "BIGINT",
+          "description": "Resgates efetivos no período.",
+          "tests": [],
+          "meta": {}
+        },
+        "redeemed_points": {
+          "type": "BIGINT",
+          "description": "Pontos resgatados no período (líquidos).",
+          "tests": [],
+          "meta": {}
+        },
+        "avg_monthly_points": {
+          "type": "DOUBLE",
+          "description": "Pontos resgatados por mês médio de 30,4 dias.",
+          "tests": [],
+          "meta": {}
+        },
+        "product_value_brl": {
+          "type": "DECIMAL(38,2)",
+          "description": "Valor dos produtos resgatados (R$).",
+          "tests": [],
+          "meta": {}
+        },
+        "customer_cash_brl": {
+          "type": "DECIMAL(38,2)",
+          "description": "Dinheiro pago pelos clientes junto com os pontos (R$).",
+          "tests": [],
+          "meta": {}
+        },
+        "value_per_point_brl": {
+          "type": "DOUBLE",
+          "description": "Valor de prateleira por ponto (R$), sem descontar o dinheiro pago pelo cliente.",
+          "tests": [],
+          "meta": {}
+        },
+        "cost_per_point_brl": {
+          "type": "DOUBLE",
+          "description": "Custo estimado do programa por ponto resgatado (R$).",
+          "tests": [],
+          "meta": {}
+        },
+        "period_days": {
+          "type": "BIGINT",
+          "description": "Dias do período, usados para a média mensal.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    }
+  }
+}

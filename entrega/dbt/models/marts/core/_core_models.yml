@@ -75,6 +75,11 @@ models:
 
   - name: dim_product
     description: "Produtos de resgate. Grão: 1 linha por fornecedor x responsável x tipo de produto x categoria macro."
+    config:
+      tags: [published]
+      meta:
+        grain: "1 linha por fornecedor x responsável x tipo x categoria"
+        business_questions: ["Quais fornecedores e modalidades existem?", "Como cada produto conta para as metas?"]
     columns:
       - name: product_key
         description: "PK. Hash das quatro colunas do grão."
@@ -105,6 +110,11 @@ models:
 
   - name: dim_operation
     description: "Tipos de movimento do ledger. Grão: 1 linha por operation_code."
+    config:
+      tags: [published]
+      meta:
+        grain: "1 linha por tipo de operação do ledger"
+        business_questions: ["Que tipos de movimento de pontos existem?"]
     columns:
       - name: operation_key
         description: "PK. Hash de operation_code."
@@ -112,6 +122,8 @@ models:
       - name: operation_code
         description: Código na origem.
         tests: [unique, not_null]
+      - name: operation_name
+        description: "CREDITO, RESGATE, EXPIRACAO, ESTORNO_CREDITO, ESTORNO_PEDIDO, CREDITO_MIGRACAO ou EXPIRACAO_MIGRACAO."
       - name: direction
         description: CREDIT ou DEBIT.
       - name: is_migration
@@ -121,6 +133,11 @@ models:
 
   - name: dim_campaign
     description: "Campanhas do CRM. Grão: 1 linha por campaign_id. Linha '-1' = evento sem campanha."
+    config:
+      tags: [published]
+      meta:
+        grain: "1 linha por campanha do CRM"
+        business_questions: ["Quais campanhas existiram e quando?"]
     columns:
       - name: campaign_key
         description: "PK. Hash de campaign_id."
@@ -131,6 +148,10 @@ models:
         description: "Nome mais frequente em event_properties.campaign_name."
       - name: campaign_channels
         description: Canais em que a campanha rodou.
+      - name: first_event_at
+        description: Primeiro evento da campanha (horário local).
+      - name: last_event_at
+        description: Último evento da campanha (horário local).
 
   # ---------------------------------------------------------------- fatos
   - name: fct_redemption_items
