@@ -31,8 +31,15 @@ Arquivo de trabalho: acumula o que deve entrar no README e na apresentação. Ca
 1. Transferências para programas parceiros (Nuvem Recompensas, Pontos Max) contam como varejo na meta? O operador as soma em varejo.
 2. Decola Viagens (agência de viagens) está em `Varejo/PRODUTO`. É varejo mesmo, ou passagem vendida por agência?
 3. `COMPRA_PONTOS` (cliente compra pontos com dinheiro) não debita pontos. Confirmar que fica fora das metas.
+4. O que aconteceu em 12/01/2026? Carga de passagens do programa anterior, promoção não registrada no CRM ou reprocessamento?
+5. Por que o saldo migrado expira ~7 mi pontos/mês desde jan/2026 se o `valid_until` dele é 31/03/2028? A regra de expiração do programa anterior foi mantida?
+6. Qual a definição de breakage usada pela diretoria para o "40%"?
 
 ## Confirmado nos dados
+
+- **Estornos.** Os itens ESTORNADO debitaram 3,13 mi pontos e foram devolvidos no ledger (ESTORNO_PEDIDO) em média 7 dias depois: 207 de 220 casam por conta e valor exato. A sobra de ESTORNO_PEDIDO (≈ 254 mil pontos) bate com o `refunded_points` de 103 itens APROVADO com devolução parcial (254.384 pontos).
+- **Validade.** Crédito do programa novo vale 24 meses (101.593 de 101.593 movimentos); o primeiro vencimento é 25/09/2027. **Nenhum ponto do programa novo expirou até a extração.** Saldo migrado tem validade 31/03/2028, mas expira ~7 mi pontos/mês desde jan/2026 (EXPIRACAO_MIGRACAO), 64,1 mi no total (19,8% dos 324,0 mi migrados).
+- **12/01/2026.** Um único dia concentra 1.517 resgates de aéreas e 75,9 mi pontos (86% de jan; um mês normal resgata ~16 a 19 mi no total). 1.687 dos 1.799 clientes de jan têm saldo migrado. Os resgates se distribuem igualmente nas 24h, inclusive de madrugada, e não há campanha de CRM relevante entre 05 e 12/01. Padrão de carga em lote, não de comportamento.
 
 - Nenhuma fonte tem linhas duplicadas, nem pela chave nem pela linha inteira.
 - No ledger, CREDIT tem sempre pontos > 0 e DEBIT sempre < 0 (teste `assert_sinal_do_ledger_bate_com_direcao`).
