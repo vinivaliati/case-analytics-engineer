@@ -1,4 +1,4 @@
-# Sem segredo: banco DuckDB local, gerado do zero a partir de ../dados.
+# Sem segredo: banco DuckDB local, gerado do zero a partir de ../../dados.
 pontua:
   target: dev
   outputs:

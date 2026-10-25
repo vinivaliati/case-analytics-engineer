@@ -4,9 +4,9 @@ storytelling_diretoria.md
 linha_do_tempo.sh
 .env
 .venv/
-dbt/target/
-dbt/logs/
-dbt/dbt_packages/
-dbt/*.duckdb
-dbt/*.duckdb.wal
-dbt/.user.yml
+entrega/dbt/target/
+entrega/dbt/logs/
+entrega/dbt/dbt_packages/
+entrega/dbt/*.duckdb
+entrega/dbt/*.duckdb.wal
+entrega/dbt/.user.yml
