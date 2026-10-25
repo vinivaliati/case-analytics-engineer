@@ -19,7 +19,7 @@ seeds:
     description: >
       Classificação de cada produto de resgate para as metas contratuais (aéreas >= 50%, varejo >= 20% dos pontos resgatados).
       Duas visões: 'contract' reproduz a definição do relatório do operador (category_macro da origem, ±1 p.p.);
-      'strict' tira do varejo as transferências a parceiros e a agência de viagens. Regra revisável: altere aqui e rode o build.
+      'strict' tira do varejo as transferências a parceiros e a agência de viagens. Tabela de referência de regra de negócio. Neste case é materializada como seed dbt (schema seeds) por não haver sistema de origem; em produção seria uma tabela de referência governada no warehouse, mantida pelo dono do negócio (ex.: time do programa), com histórico de alterações, lida pelo dbt como source.
     config:
       column_types:
         supplier_name: varchar

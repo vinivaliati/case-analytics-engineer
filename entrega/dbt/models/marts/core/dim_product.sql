@@ -1,5 +1,5 @@
 -- Grão: 1 linha por combinação fornecedor x responsável x tipo de produto x categoria macro. PK: product_key.
--- A classificação das metas vem do seed goal_categories (regra de negócio versionada e revisável).
+-- A classificação das metas vem da tabela de referência goal_categories (regra de negócio governada; seed neste case).
 with
 
 items as (

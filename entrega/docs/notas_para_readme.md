@@ -19,7 +19,8 @@ Arquivo de trabalho: acumula o que deve entrar no README e na apresentação. Ca
    - Limitação: é o nível de hoje, não o da data do resgate. Um cliente que subiu de Gold para Black aparece como Black no histórico.
    - Alternativa disponível sem retrabalho: `dim_account.card_class` (por conta). Se o negócio preferir, é troca de join.
 2. **Saldo de pontos no grão cliente × mês** (`fct_points_balance_monthly`). A versão por conta (`fct_points_balance_account_monthly`) fica como detalhe, com aviso de que contas podem ser negativas.
-3. **Metas: visão oficial = definição do operador** (`goal_category_contract`, seed `goal_categories`).
+3. **Metas: visão oficial = definição do operador** (`goal_category_contract`, tabela de referência `goal_categories`).
+   - Em produção, `goal_categories` seria uma tabela de referência governada no warehouse, mantida pelo dono do negócio com histórico de alterações; mudar a regra = atualizar a tabela e reprocessar. Neste case ela é um seed dbt porque não há sistema de origem para essa regra.
    - Evidência: com `category_macro` da origem e itens aprovados, reproduzimos o `aereas_pct` e `varejo_pct` do relatório com diferença ≤ 0,3 p.p. em todos os meses, exceto jun/2026 (aéreas 56,3% vs 55%), a investigar.
    - Visão de sensibilidade (`goal_category_strict`): varejo só com produto, sem transferências a parceiros e sem Decola Viagens. Nela o varejo já estava em 11 a 14% antes do Pix: a meta de 20% nunca teria sido cumprida.
    - Compra de pontos fica fora das duas visões (não é resgate).

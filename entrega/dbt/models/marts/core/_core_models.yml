@@ -80,10 +80,10 @@ models:
       - name: category_macro
         description: "Categoria macro da origem (Aereas, Varejo, Cashback). Para metas use goal_category_contract."
       - name: goal_category_contract
-        description: "Categoria oficial das metas (definição do operador): aereas, varejo, pix, fora_da_meta. Seed goal_categories."
+        description: "Categoria oficial das metas (definição do operador): aereas, varejo, pix, fora_da_meta. Tabela de referência goal_categories."
         tests: [not_null]
       - name: goal_category_strict
-        description: "Categoria de sensibilidade: varejo só com produto. Seed goal_categories."
+        description: "Categoria de sensibilidade: varejo só com produto. Tabela de referência goal_categories."
         tests: [not_null]
       - name: is_redemption
         description: "Entra no denominador das metas. Falso só para compra de pontos."
