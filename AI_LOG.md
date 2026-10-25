@@ -92,3 +92,9 @@ Uma entrada por sessão, da mais antiga para a mais recente. Formato e regras em
 - **O que a IA fez ou sugeriu:** pulou a aprovação prévia do roteiro, a pedido do candidato. Criou entrega/apresentacao/gerar_decks.py, que copia o cabeçalho e os scripts do modelo da Brain e gera index.html (diretoria, 14 slides) e tecnica.html (6 slides) com os números lidos dos marts. Conferiu os slides por screenshots. Escreveu o README final (reconstrução em um comando, dicionário descoberto, confirmado × hipótese, perguntas ao negócio, avaliação do Airflow, tempo gasto, uso de IA) e moveu o enunciado original para contexto/enunciado.md.
 - **O que o candidato conferiu, corrigiu ou rejeitou:** pediu para acelerar. A IA corrigiu: o script do modelo quebrava sem o modal do carrossel (slides em branco); o waterfall recusava a soma em ponto flutuante (passou a inteiros em mil pontos); o arredondamento do Python (meio para o par) deixava o deck com 12,8% e o dashboard com 12,9% (os dois passaram a usar arredondamento comercial); e o slide de recomendação encostava no logo.
 - **Arquivos criados ou alterados:** entrega/apresentacao/** (gerar_decks.py, index.html, tecnica.html, img/, lib/), entrega/dashboard/lib/ui.py, README.md, contexto/enunciado.md (movido), AI_LOG.md.
+
+### 2026-10-25T15:56:02-03:00 · Claude Code (VS Code) · Claude Opus 5.5
+- **Pedido:** finalizar a sessão; o candidato fará o deploy do Streamlit.
+- **O que a IA fez ou sugeriu:** passou o roteiro de deploy no Streamlit Community Cloud (arquivo principal, branch, versão do Python e secrets em TOML) e o texto do PR a ser aberto pelo navegador (gh CLI indisponível).
+- **O que o candidato conferiu, corrigiu ou rejeitou:** vai abrir o PR e fazer o deploy manualmente.
+- **Arquivos criados ou alterados:** AI_LOG.md.
