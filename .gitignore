@@ -3,3 +3,9 @@ storytelling_diretoria.md
 .claude/
 linha_do_tempo.sh
 .env
+.venv/
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/*.duckdb
+dbt/*.duckdb.wal

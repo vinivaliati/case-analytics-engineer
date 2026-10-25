@@ -1,0 +1,24 @@
+name: pontua
+version: "1.0.0"
+profile: pontua
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+vars:
+  # Fuso de referência de todo o projeto. Pedidos, ledger e cartões já vêm em -03:00;
+  # o CRM vem em UTC (confirmado: Order Approved = orders.created_at + 3h em 17.385 de 17.494 eventos).
+  local_tz: "America/Sao_Paulo"
+
+models:
+  pontua:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts

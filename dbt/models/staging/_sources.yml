@@ -1,0 +1,58 @@
+version: 2
+
+# Todos os CSVs são lidos como texto (all_varchar): a tipagem é feita explicitamente no staging.
+# O caminho é relativo à pasta dbt/, de onde o dbt é executado.
+sources:
+  - name: pedidos
+    description: Sistema de pedidos do catálogo de resgates.
+    meta:
+      external_location: "read_csv('../dados/{name}.csv', all_varchar = true, header = true)"
+    tables:
+      - name: orders
+      - name: order_items
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "coalesce(try_cast(paid_points as double), 0) = round(coalesce(try_cast(paid_points as double), 0)) and try_cast(refunded_points as double) = round(try_cast(refunded_points as double))"
+      - name: carts
+      - name: redeemed_points
+
+  - name: pontos
+    description: Ledger de pontos e cadastro de operações.
+    meta:
+      external_location: "read_csv('../dados/{name}.csv', all_varchar = true, header = true)"
+    tables:
+      - name: points_ledger
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "try_cast(points as double) = round(try_cast(points as double))"
+      - name: dim_operation
+
+  - name: cartoes
+    description: Cadastro de contas/cartões.
+    meta:
+      external_location: "read_csv('../dados/{name}.csv', all_varchar = true, header = true)"
+    tables:
+      - name: cards
+
+  - name: crm
+    description: Exportação da ferramenta de engajamento. Timestamps em UTC, sem offset.
+    meta:
+      external_location: "read_csv('../dados/{name}.csv', all_varchar = true, header = true)"
+    tables:
+      - name: crm_events
+
+  - name: operador
+    description: Relatório mensal do operador ao banco (números autodeclarados).
+    meta:
+      external_location: "read_csv('../dados/{name}.csv', all_varchar = true, header = true)"
+    tables:
+      - name: relatorio_mensal_cliente
+
+  - name: controle
+    description: Manifesto da versão dos dados, usado para conferir contagens.
+    meta:
+      external_location: "read_csv('../{name}.csv', all_varchar = true, header = true)"
+    tables:
+      - name: MANIFESTO_v1
