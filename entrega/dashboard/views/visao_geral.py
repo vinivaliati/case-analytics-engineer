@@ -132,7 +132,16 @@ if prompt:
             st.markdown(prompt)
         with st.chat_message("assistant"):
             if not settings.is_configured:
-                text, sqls = "O agente não está configurado: defina `GEMINI_API_KEY` no `.env` (local) ou nos secrets (produção).", []
+                from agente.config import secrets_diagnostic  # noqa: E402
+
+                found = secrets_diagnostic()
+                text = (
+                    "O agente não está configurado: a chave `GEMINI_API_KEY` não foi encontrada.\n\n"
+                    f"Nomes encontrados nos secrets: {', '.join(f'`{n}`' for n in found) if found else 'nenhum'}.\n\n"
+                    "No Streamlit Cloud: *Manage app › Settings › Secrets*, cole `GEMINI_API_KEY = \"sua_chave\"` "
+                    "(com aspas), salve e reinicie o app (*Reboot app*)."
+                )
+                sqls = []
                 st.warning(text)
             else:
                 from agente.agent import ask

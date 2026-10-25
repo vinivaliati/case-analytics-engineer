@@ -104,3 +104,9 @@ Uma entrada por sessão, da mais antiga para a mais recente. Formato e regras em
 - **O que a IA fez ou sugeriu:** adicionou o link do app publicado no topo do README e na tabela de entregáveis. Antes disso, avisou que fazer merge direto na main impediria abrir o PR de entrega; o candidato preferiu manter a main intocada e apontar o deploy para a branch entrega.
 - **O que o candidato conferiu, corrigiu ou rejeitou:** escolheu não fazer merge na main.
 - **Arquivos criados ou alterados:** README.md, AI_LOG.md.
+
+### 2026-10-25T16:08:32-03:00 · Claude Code (VS Code) · Claude Opus 5.5
+- **Pedido:** fazer o agente funcionar em produção; no app publicado aparecia "O agente não está configurado".
+- **O que a IA fez ou sugeriu:** diagnosticou que, em produção, a chave não estava sendo lida dos secrets do Streamlit. Tornou a leitura tolerante (procura no topo e dentro de seções, sem diferenciar maiúsculas), passou a mostrar no app os nomes dos secrets encontrados (nunca os valores) e o formato esperado, e testou com um secrets.toml simulado. Testou a cota da chave: gemini-3.8-flash, 3.6 e 3.7 sem cota no dia; 3.5-flash, 3.5-flash-lite e 3.1-flash-lite respondem. Incluiu o 3.1-flash-lite na lista de reserva.
+- **O que o candidato conferiu, corrigiu ou rejeitou:** repassou a mensagem de erro de produção.
+- **Arquivos criados ou alterados:** agente/config.py, entrega/dashboard/views/visao_geral.py, .env.example, README.md, AI_LOG.md.
