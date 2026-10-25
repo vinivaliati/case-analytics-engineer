@@ -60,7 +60,10 @@ models:
                 to: ref('stg_pedidos__carts')
                 field: cart_id
       - name: user_id
-        description: "100% vazio na origem (v1). Não usar: o usuário vem de stg_pedidos__carts.user_id."
+        description: "100% vazio na origem (v1). Não usar: o usuário vem de stg_pedidos__carts.user_id. AJUSTE DE INGESTÃO pendente (ver docs/notas_para_readme.md)."
+        config:
+          meta:
+            ingestion_issue: "Coluna 100% nula na extração; recuperar via cart_id -> carts.user_id."
       - name: order_created_at
         description: Criação do pedido, no fuso local.
         tests: [not_null]
