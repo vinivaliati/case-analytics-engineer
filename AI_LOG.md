@@ -32,3 +32,9 @@ Uma entrada por sessão, da mais antiga para a mais recente. Formato e regras em
 - **O que a IA fez ou sugeriu:** apresentou um plano em 6 etapas (aprovado); moveu dbt/ e docs/ para entrega/ (README.md, AI_LOG.md, dados/ e MANIFESTO ficam na raiz, como pede o contrato); ajustou os caminhos relativos das sources e o .gitignore; rodou de novo o dbt build (149/149 PASS); criou requirements.txt com versões fixas.
 - **O que o candidato conferiu, corrigiu ou rejeitou:** aprovou o plano e pediu a reorganização antes de continuar.
 - **Arquivos criados ou alterados:** entrega/dbt/** (movido), entrega/docs/** (movido), entrega/dbt/models/staging/_sources.yml, entrega/dbt/profiles.yml, .gitignore, requirements.txt, AI_LOG.md.
+
+### 2026-10-25T14:14:45-03:00 · Claude Code (VS Code) · Claude Opus 5.5
+- **Pedido:** mover os arquivos originais do case para outra pasta, para respeitar a estrutura de entrega.
+- **O que a IA fez ou sugeriu:** moveu dados/, MANIFESTO_v1.csv e apresentacao-modelo/ para contexto/; deixou o caminho dos CSVs configurável por variável de ambiente (PONTUA_DADOS_DIR, padrão ../../contexto/dados). Primeira tentativa quebrou o YAML por aspas aninhadas, corrigida. Rodou o build de novo (149/149 PASS) e confirmou que a variável muda o caminho (apontando para uma pasta inexistente, o build falha). O README.md original continua na raiz até virar o README da entrega.
+- **O que o candidato conferiu, corrigiu ou rejeitou:** sugeriu o nome "contexto".
+- **Arquivos criados ou alterados:** contexto/** (movido), entrega/dbt/models/staging/_sources.yml, entrega/dbt/profiles.yml, AI_LOG.md.
