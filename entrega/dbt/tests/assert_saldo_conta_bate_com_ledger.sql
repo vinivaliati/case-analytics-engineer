@@ -1,12 +1,11 @@
--- O saldo de cada conta no último mês do snapshot = soma de todos os movimentos dela no ledger.
--- E o total de pontos do snapshot = total do ledger (nenhum movimento perdido ou duplicado).
+-- O saldo de cada conta no último mês do snapshot de contas = soma de todos os movimentos dela no ledger.
 with
 
 snapshot_last as (
     select
         account_key
         , closing_balance_points
-    from {{ ref('fct_points_balance_monthly') }}
+    from {{ ref('fct_points_balance_account_monthly') }}
     qualify row_number() over (partition by account_key order by month_date_key desc) = 1
 )
 

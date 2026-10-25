@@ -12,11 +12,18 @@ Arquivo de trabalho: acumula o que deve entrar no README e na apresentação. Ca
 
 ## Decisões a defender na apresentação
 
-1. **Nível do cartão = nível da conta que pagou o resgate**, e não o nível atual do cliente.
-   - Por quê: o resgate debita pontos de uma conta específica (`redeemed_points.account_id`). Cada conta tem um único nível, e a conta é quem gera e gasta os pontos. O nível atual do cliente (`is_most_recent`) mudaria a história retroativamente quando ele troca de cartão.
-   - Ponto aberto: 820 itens são pagos por contas de dois níveis diferentes (ver decisões pendentes).
-   - Se o negócio preferir o nível atual do cliente, a troca é só de join: `dim_customer.current_card_class`.
-2. **CRM tratado como UTC** e convertido para America/Sao_Paulo (evidência no item 2 de ingestão).
+1. **Nível do cartão = nível atual do cliente** (`dim_customer.current_card_class`, conta com `is_most_recent`).
+   - Primeira proposta era o nível da conta que pagou o resgate. Foi trocada por dois achados nos dados:
+     - **o saldo é uma carteira por cliente**: 1.197 contas fecham set/2026 negativas (−20,0 mi pontos), nenhum cliente fica negativo;
+     - **820 itens são pagos por contas de níveis diferentes**, então "o nível da conta que pagou" não tem valor único.
+   - Limitação: é o nível de hoje, não o da data do resgate. Um cliente que subiu de Gold para Black aparece como Black no histórico.
+   - Alternativa disponível sem retrabalho: `dim_account.card_class` (por conta). Se o negócio preferir, é troca de join.
+2. **Saldo de pontos no grão cliente × mês** (`fct_points_balance_monthly`). A versão por conta (`fct_points_balance_account_monthly`) fica como detalhe, com aviso de que contas podem ser negativas.
+3. **Metas: visão oficial = definição do operador** (`goal_category_contract`, seed `goal_categories`).
+   - Evidência: com `category_macro` da origem e itens aprovados, reproduzimos o `aereas_pct` e `varejo_pct` do relatório com diferença ≤ 0,3 p.p. em todos os meses, exceto jun/2026 (aéreas 56,3% vs 55%), a investigar.
+   - Visão de sensibilidade (`goal_category_strict`): varejo só com produto, sem transferências a parceiros e sem Decola Viagens. Nela o varejo já estava em 11 a 14% antes do Pix: a meta de 20% nunca teria sido cumprida.
+   - Compra de pontos fica fora das duas visões (não é resgate).
+4. **CRM tratado como UTC** e convertido para America/Sao_Paulo (evidência no item 2 de ingestão).
 
 ## Perguntas ao negócio
 

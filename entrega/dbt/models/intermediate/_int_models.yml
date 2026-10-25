@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_redeemed_points__per_item
+    description: "Resumo de redeemed_points por item. Grão: 1 linha por order_item_id com movimento de pontos."
+    columns:
+      - name: order_item_id
+        description: Item de pedido.
+        tests: [unique, not_null]
+      - name: points_debited
+        description: Soma de RESGATE em módulo.
+      - name: paying_accounts_count
+        description: Contas distintas que pagaram o item.
+      - name: reservation_net_points
+        description: "RESERVA + CANCELADO_RESERVA. É zero em todos os itens da v1 (as reservas se anulam)."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0]
+                quote: false
+
+  - name: int_points_ledger__account_monthly
+    description: "Ledger pivotado por operação. Grão: 1 linha por conta x mês com movimento. Débitos em módulo."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [account_id, month_start]
+    columns:
+      - name: net_change_points
+        description: Soma com sinal de todos os movimentos do mês.

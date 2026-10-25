@@ -37,7 +37,7 @@ models:
                 to: ref('dim_customer')
                 field: customer_key
       - name: card_class
-        description: Nível do cartão desta conta. É o nível usado nas análises por nível (decisão documentada).
+        description: "Nível do cartão desta conta. NÃO é o nível usado nas análises: ver dim_customer.current_card_class. Mantido para análises por conta."
       - name: card_class_rank
         description: "Ordem do nível: 1 = Essencial ... 6 = Black (seed card_classes)."
       - name: card_brand
@@ -54,7 +54,14 @@ models:
       - name: user_id
         description: Identificador do cliente na origem.
       - name: current_card_class
-        description: Nível da conta mais recente do cliente. Alternativa ao nível da conta, caso o negócio prefira.
+        description: >
+          NÍVEL OFICIAL DAS ANÁLISES POR NÍVEL DE CARTÃO. É o nível da conta mais recente do cliente (is_most_recent).
+          Motivo: o saldo de pontos é uma carteira por cliente (contas isoladas ficam negativas, clientes nunca),
+          e 820 itens são pagos por contas de níveis diferentes, então "o nível da conta que pagou" não tem valor único.
+          Limitação: o nível é o atual, não o da data do resgate. Alternativa: dim_account.card_class.
+        config:
+          meta:
+            decision: "Nível atual do cliente. Aprovado pelo candidato; levar à apresentação como decisão revisável."
       - name: accounts_count
         description: Quantidade de contas do cliente.
 
@@ -71,7 +78,18 @@ models:
       - name: product_type
         description: "PASSAGEM, PRODUTO, TRANSFERENCIA ou COMPRA_PONTOS."
       - name: category_macro
-        description: "Categoria macro da origem (Aereas, Varejo, Cashback). Não é a classificação das metas."
+        description: "Categoria macro da origem (Aereas, Varejo, Cashback). Para metas use goal_category_contract."
+      - name: goal_category_contract
+        description: "Categoria oficial das metas (definição do operador): aereas, varejo, pix, fora_da_meta. Seed goal_categories."
+        tests: [not_null]
+      - name: goal_category_strict
+        description: "Categoria de sensibilidade: varejo só com produto. Seed goal_categories."
+        tests: [not_null]
+      - name: is_redemption
+        description: "Entra no denominador das metas. Falso só para compra de pontos."
+        tests: [not_null]
+      - name: goal_category_rationale
+        description: Justificativa da classificação.
       - name: is_pix
         description: "Resgate via Pontos no Pix (fornecedor 'Pix Pontua+')."
       - name: is_points_purchase
@@ -247,13 +265,59 @@ models:
         description: Sempre 1. Facilita somas em ferramentas de BI.
 
   - name: fct_points_balance_monthly
-    description: "Snapshot periódico de saldo. Grão: 1 linha por conta x mês, do primeiro mês com movimento até set/2026."
+    description: "Snapshot periódico de saldo (oficial). Grão: 1 linha por cliente x mês, do primeiro mês com movimento até set/2026. Débitos aparecem em módulo."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_key, month_date_key]
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "closing_balance_points >= 0"
+    columns:
+      - name: points_balance_key
+        description: "PK. Hash de user_id + mês."
+        tests: [unique, not_null]
+      - name: customer_key
+        description: "FK para dim_customer."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: month_date_key
+        description: "FK para dim_date (primeiro dia do mês)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: credited_points
+        description: Pontos creditados no mês (operação CREDITO).
+      - name: migrated_points
+        description: Saldo migrado do programa anterior creditado no mês (CREDITO_MIGRACAO).
+      - name: redeemed_points
+        description: Pontos resgatados no mês (RESGATE), em módulo.
+      - name: order_refund_points
+        description: Pontos devolvidos por estorno de pedido (ESTORNO_PEDIDO).
+      - name: expired_points
+        description: Pontos expirados no mês (EXPIRACAO), em módulo.
+      - name: expired_migrated_points
+        description: Pontos migrados expirados no mês (EXPIRACAO_MIGRACAO), em módulo.
+      - name: net_change_points
+        description: Variação líquida do saldo no mês.
+      - name: closing_balance_points
+        description: Saldo do cliente ao fim do mês. Nunca negativo (testado).
+
+  - name: fct_points_balance_account_monthly
+    description: "Snapshot de saldo por conta (detalhe). Grão: 1 linha por conta x mês. Contas podem ficar negativas porque o saldo é do cliente: para saldo, use fct_points_balance_monthly."
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [account_key, month_date_key]
     columns:
-      - name: points_balance_key
+      - name: points_balance_account_key
         description: "PK. Hash de account_id + mês."
         tests: [unique, not_null]
       - name: account_key
