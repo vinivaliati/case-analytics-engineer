@@ -12,6 +12,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO / "entrega" / "dashboard" / "data"
 DEFAULT_MODEL = "gemini-3.8-flash"
+# Reservas, em ordem, quando o principal está sem cota (429) ou indisponível (503).
+# Cada modelo tem cota própria no plano gratuito (ex.: 20 requisições/dia por modelo).
+# Não usar "gemini-flash-latest": é um apelido do mesmo modelo principal e divide a cota com ele.
+DEFAULT_FALLBACK_MODEL = "gemini-3.6-flash,gemini-3.5-flash,gemini-3.5-flash-lite"
 
 
 def _load_dotenv() -> None:
@@ -43,10 +47,11 @@ class Settings:
     use_vertexai: bool
     project: str | None
     location: str | None
+    fallback_model: str | None = None
 
     @property
     def is_configured(self) -> bool:
-        return self.use_vertexai and bool(self.project) or bool(self.api_key)
+        return (self.use_vertexai and bool(self.project)) or bool(self.api_key)
 
 
 def load_settings() -> Settings:
@@ -57,4 +62,5 @@ def load_settings() -> Settings:
         use_vertexai=(_get("GOOGLE_GENAI_USE_VERTEXAI", "false") or "false").lower() == "true",
         project=_get("GOOGLE_CLOUD_PROJECT"),
         location=_get("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        fallback_model=_get("GEMINI_FALLBACK_MODEL", DEFAULT_FALLBACK_MODEL),
     )

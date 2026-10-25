@@ -96,3 +96,30 @@ def test_laco_executa_sql_e_responde_com_o_resultado():
 def test_sem_chave_responde_que_nao_esta_configurado():
     agent = AnalystAgent(Settings(api_key=None, model="x", use_vertexai=False, project=None, location=None))
     assert agent.ask("oi").error == "not_configured"
+
+
+class BusyThenOkModels:
+    """O modelo principal responde 503; o de reserva responde normalmente."""
+
+    def __init__(self) -> None:
+        self.models_called: list[str] = []
+
+    def generate_content(self, model, contents, config):
+        from google.genai import errors
+
+        self.models_called.append(model)
+        if model == "principal":
+            raise errors.ServerError(503, {"error": {"code": 503, "message": "high demand", "status": "UNAVAILABLE"}})
+        return SimpleNamespace(function_calls=None, candidates=[], text="ok")
+
+
+def test_usa_modelo_de_reserva_quando_o_principal_esta_indisponivel(monkeypatch):
+    import agente.agent as agent_module
+
+    monkeypatch.setattr(agent_module, "BACKOFF_SECONDS", 0)
+    agent = AnalystAgent(Settings(api_key="fake", model="principal", use_vertexai=False, project=None, location=None, fallback_model="reserva"))
+    fake = BusyThenOkModels()
+    agent._client = SimpleNamespace(models=fake)
+    answer = agent.ask("oi")
+    assert answer.text == "ok" and answer.model == "reserva"
+    assert fake.models_called == ["principal"] * agent_module.RETRIES + ["reserva"]
