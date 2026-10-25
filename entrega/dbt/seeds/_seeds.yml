@@ -52,3 +52,32 @@ seeds:
         tests: [not_null]
       - name: rationale
         description: Justificativa da classificação.
+
+  - name: calendar_events
+    description: >
+      Eventos de negócio que explicam ou distorcem séries (lançamentos, dias atípicos). Tabela de referência governada:
+      em produção seria mantida pela área de negócio no warehouse; aqui é seed por não haver sistema de origem.
+      evidence_status separa o que está confirmado do que é hipótese.
+    config:
+      column_types:
+        event_date: date
+        event_type: varchar
+        event_name: varchar
+        description: varchar
+        evidence_status: varchar
+    columns:
+      - name: event_date
+        description: Data do evento (local).
+        tests: [unique, not_null]
+      - name: event_type
+        description: "lancamento ou atipico."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [lancamento, atipico]
+      - name: evidence_status
+        description: "confirmado ou hipotese_a_validar_com_negocio."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [confirmado, hipotese_a_validar_com_negocio]

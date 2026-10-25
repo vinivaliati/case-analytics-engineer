@@ -1,7 +1,8 @@
 -- Fato transacional. Grão: 1 linha por item de pedido. PK: order_item_id.
 -- FKs: product_key, customer_key, item_date_key. A conta que pagou não entra aqui porque
--- 1.471 itens são pagos por mais de uma conta (ver decisões pendentes).
--- Inclui todos os status: o filtro de "resgate efetivo" é regra de negócio e fica para as camadas de consumo.
+-- 1.471 itens são pagos por mais de uma conta; o nível de cartão das análises vem de dim_customer.
+-- Inclui todos os status. Regra de resgate efetivo (aprovada): item APROVADO, que não seja compra de pontos,
+-- medido em pontos debitados menos pontos devolvidos (net_redeemed_points). ESTORNADO fica fora: foi devolvido inteiro.
 with
 
 items as (
@@ -44,6 +45,13 @@ items as (
         , coalesce(redeemed.points_debited, 0)                          as points_debited
         , coalesce(redeemed.paying_accounts_count, 0)                   as paying_accounts_count
         , coalesce(redeemed.reservation_net_points, 0)                  as reservation_net_points
+        , items.item_status = 'APROVADO'
+            and items.product_type <> 'COMPRA_PONTOS'                   as is_effective_redemption
+        , case
+            when items.item_status = 'APROVADO' and items.product_type <> 'COMPRA_PONTOS'
+                then coalesce(redeemed.points_debited, 0) - items.refunded_points
+            else 0
+          end                                                           as net_redeemed_points
     from items
     inner join orders
         on items.order_id = orders.order_id

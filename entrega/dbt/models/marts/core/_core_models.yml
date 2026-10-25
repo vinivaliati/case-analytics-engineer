@@ -19,6 +19,14 @@ models:
         description: "Verdadeiro a partir de 27/05/2026, lançamento do Pontos no Pix."
       - name: is_before_extraction
         description: "Verdadeiro antes de 01/10/2026, data da extração. Dias depois disso não têm dados."
+      - name: is_pre_pix_baseline
+        description: "Linha de base 'antes do Pix': 01/02/2026 a 26/05/2026. Exclui jan/2026 (pico atípico de 12/01) e out-dez/2025 (período da migração)."
+      - name: is_atypical_day
+        description: "Dia marcado como atípico na tabela de referência calendar_events (ex.: 12/01/2026). O dado não é removido; a flag permite análises com e sem o evento."
+      - name: event_name
+        description: Nome do evento de negócio do dia, se houver.
+      - name: event_evidence_status
+        description: "confirmado ou hipotese_a_validar_com_negocio."
 
   - name: dim_account
     description: "Contas de cartão. Grão: 1 linha por conta. Linha '-1' = conta desconhecida."
@@ -174,6 +182,18 @@ models:
         description: Pontos efetivamente debitados (soma de RESGATE em redeemed_points). 0 quando não houve débito.
       - name: paying_accounts_count
         description: Quantidade de contas que pagaram o item. Maior que 1 em 1.471 itens.
+      - name: is_effective_redemption
+        description: >
+          REGRA DE RESGATE EFETIVO (aprovada, revisável pelo negócio): item APROVADO que não é compra de pontos.
+          ESTORNADO fica fora porque os pontos voltaram ao cliente (207 de 220 casam com ESTORNO_PEDIDO no ledger).
+        tests: [not_null]
+        config:
+          meta:
+            decision: "Resgate efetivo = APROVADO líquido de devoluções parciais. Impacto documentado em docs/notas_para_readme.md."
+      - name: net_redeemed_points
+        description: >
+          MÉTRICA OFICIAL DE PONTOS RESGATADOS: pontos debitados menos refunded_points, só em resgates efetivos (0 nos demais).
+          Difere de points_debited em 103 itens com devolução parcial (254.384 pontos, 0,08% do total).
 
   - name: fct_points_movements
     description: "Fato transacional do ledger. Grão: 1 linha por movimento."

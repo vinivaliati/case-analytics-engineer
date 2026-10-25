@@ -25,13 +25,20 @@ Arquivo de trabalho: acumula o que deve entrar no README e na apresentação. Ca
    - Visão de sensibilidade (`goal_category_strict`): varejo só com produto, sem transferências a parceiros e sem Decola Viagens. Nela o varejo já estava em 11 a 14% antes do Pix: a meta de 20% nunca teria sido cumprida.
    - Compra de pontos fica fora das duas visões (não é resgate).
 4. **CRM tratado como UTC** e convertido para America/Sao_Paulo (evidência no item 2 de ingestão).
+5. **Resgate efetivo = item APROVADO (exceto compra de pontos), líquido de devoluções parciais** (`fct_redemption_items.is_effective_redemption` e `net_redeemed_points`). **Decisão para o negócio validar.** Impacto medido:
+   - Diferença total: 254.384 pontos (0,08% dos pontos resgatados), em 103 itens com devolução parcial.
+   - Efeito nas participações mensais: no máximo 0,11 p.p. (aéreas ou varejo), comparando as três opções: aprovado bruto, aprovado líquido (escolhida) e aprovado + estornado.
+   - **Nenhum mês muda de status de meta** (aéreas ≥ 50%, varejo ≥ 20%) em nenhuma das três opções. A escolha é de correção conceitual, não muda conclusão.
+   - ESTORNADO fica fora porque os pontos voltaram ao cliente (207 de 220 casam com ESTORNO_PEDIDO).
+6. **Breakage segue a definição de mercado: expirados ÷ emitidos, por safra e por origem** (programa novo × migrado). Benchmark e fontes em `docs/benchmark_breakage.md` (Multiplus: 21% a 24% em 2010-2012; 17,6% no 1T18).
+7. **12/01/2026 marcado como dia atípico, sem remover o dado** (`dim_date.is_atypical_day`, tabela de referência `calendar_events`). A linha de base "antes do Pix" é fev a 26/mai/2026 (`is_pre_pix_baseline`). **Levar à apresentação como ponto importante.** Hipótese principal: promoção não registrada no CRM; validar com a área de negócio.
 
 ## Perguntas ao negócio
 
 1. Transferências para programas parceiros (Nuvem Recompensas, Pontos Max) contam como varejo na meta? O operador as soma em varejo.
 2. Decola Viagens (agência de viagens) está em `Varejo/PRODUTO`. É varejo mesmo, ou passagem vendida por agência?
 3. `COMPRA_PONTOS` (cliente compra pontos com dinheiro) não debita pontos. Confirmar que fica fora das metas.
-4. O que aconteceu em 12/01/2026? Carga de passagens do programa anterior, promoção não registrada no CRM ou reprocessamento?
+4. O que aconteceu em 12/01/2026? Hipótese principal: promoção de passagens não registrada no CRM. Alternativas: carga em lote de passagens do programa anterior ou reprocessamento.
 5. Por que o saldo migrado expira ~7 mi pontos/mês desde jan/2026 se o `valid_until` dele é 31/03/2028? A regra de expiração do programa anterior foi mantida?
 6. Qual a definição de breakage usada pela diretoria para o "40%"?
 
