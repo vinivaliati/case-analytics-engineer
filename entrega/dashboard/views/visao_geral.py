@@ -47,41 +47,40 @@ def goal_status(value: float, goal: float) -> tuple[str, str]:
     return ("good", f"Meta ≥ {goal:.0f}% cumprida") if value >= goal else ("critical", f"Abaixo da meta de {goal:.0f}%")
 
 
-k = st.columns(4)
 if row is not None:
-    with k[0]:
-        delta = (row["redeemed_points"] / base_points - 1) * 100 if base_points else 0
+    delta = (row["redeemed_points"] / base_points - 1) * 100 if base_points else 0
+    ui.kpi_row([
         ui.kpi("Pontos resgatados no mês", ui.br_compact(row["redeemed_points"]),
-               f"{'+' if delta >= 0 else ''}{ui.br(delta, 0)}% vs média fev-abr/2026 (antes do Pix)")
-    with k[1]:
-        ui.kpi("Aéreas", f"{ui.br(row.get('aereas', 0), 1)}%", "dos pontos resgatados", goal_status(row.get("aereas", 0), 50))
-    with k[2]:
-        ui.kpi("Varejo", f"{ui.br(row.get('varejo', 0), 1)}%", "dos pontos resgatados", goal_status(row.get("varejo", 0), 20))
-    with k[3]:
-        ui.kpi("Pix", f"{ui.br(row.get('pix', 0), 1)}%", f"R$ {ui.br_compact(pix_brl)} pagos em dinheiro no mês")
+               f"{'+' if delta >= 0 else ''}{ui.br(delta, 0)}% vs média fev-abr/2026 (antes do Pix)"),
+        ui.kpi("Aéreas", f"{ui.br(row.get('aereas', 0), 1)}%", "dos pontos resgatados", goal_status(row.get("aereas", 0), 50)),
+        ui.kpi("Varejo", f"{ui.br(row.get('varejo', 0), 1)}%", "dos pontos resgatados", goal_status(row.get("varejo", 0), 20)),
+        ui.kpi("Pix", f"{ui.br(row.get('pix', 0), 1)}%", f"R$ {ui.br_compact(pix_brl)} pagos em dinheiro no mês"),
+    ])
 
-st.write("")
-k2 = st.columns(4)
-with k2[0]:
-    ui.kpi("Saldo de pontos em aberto", ui.br_compact(ref_balance), "passivo ao fim do mês")
-with k2[1]:
-    if brk is not None and pd.notna(brk):
-        level = "critical" if brk > 20 else "warning" if brk >= 18 else "good"
-        ui.kpi("Breakage do saldo migrado", f"{ui.br(brk, 1)}%", "expirados ÷ migrados (acumulado)",
-               (level, "Limite de 20%: " + ("ultrapassado" if brk > 20 else "próximo" if brk >= 18 else "ok")))
-with k2[2]:
-    brk_new = flow.set_index("year_month")["breakage_new_program_realized_pct"].get(ref)
-    if brk_new is not None and pd.notna(brk_new):
-        ui.kpi("Breakage do programa novo", f"{ui.br(brk_new, 1)}%", "nenhum crédito venceu ainda (validade de 24 meses)")
-with k2[3]:
-    pix = ui.table("mart_pix_reconciliation_monthly")
-    pix["year_month"] = pd.to_datetime(pix["month_start"]).dt.strftime("%Y-%m")
-    pix_row = pix.set_index("year_month").loc[ref] if ref in set(pix["year_month"]) else None
-    if pix_row is not None:
-        ui.kpi("Custo do Pix por ponto", f"R$ {ui.br(pix_row['effective_brl_per_point'], 4)}",
-               f"real; o operador reporta R$ {ui.br(pix_row['operator_brl_per_point'], 4)} (mistura bases)")
-    else:
-        ui.kpi("Custo do Pix por ponto", "—", "Pix lançado em 27/05/2026")
+brk_card = ""
+if brk is not None and pd.notna(brk):
+    level = "critical" if brk > 20 else "warning" if brk >= 18 else "good"
+    brk_card = ui.kpi("Breakage do saldo migrado", f"{ui.br(brk, 1)}%", "expirados ÷ migrados (acumulado)",
+                      (level, "Limite de 20%: " + ("ultrapassado" if brk > 20 else "próximo" if brk >= 18 else "ok")))
+brk_new = flow.set_index("year_month")["breakage_new_program_realized_pct"].get(ref)
+brk_new_card = (
+    ui.kpi("Breakage do programa novo", f"{ui.br(brk_new, 1)}%", "nenhum crédito venceu ainda (validade de 24 meses)")
+    if brk_new is not None and pd.notna(brk_new) else ""
+)
+pix = ui.table("mart_pix_reconciliation_monthly").copy()
+pix["year_month"] = pd.to_datetime(pix["month_start"]).dt.strftime("%Y-%m")
+pix_row = pix.set_index("year_month").loc[ref] if ref in set(pix["year_month"]) else None
+pix_card = (
+    ui.kpi("Custo do Pix por ponto", f"R$ {ui.br(pix_row['effective_brl_per_point'], 4)}",
+           f"real; o operador reporta R$ {ui.br(pix_row['operator_brl_per_point'], 4)} (mistura bases)")
+    if pix_row is not None else ui.kpi("Custo do Pix por ponto", "—", "Pix lançado em 27/05/2026")
+)
+ui.kpi_row([
+    ui.kpi("Saldo de pontos em aberto", ui.br_compact(ref_balance), "passivo ao fim do mês"),
+    brk_card,
+    brk_new_card,
+    pix_card,
+])
 ui.source("agg_redemptions_monthly, agg_points_balance_monthly, mart_points_flow_monthly, mart_pix_reconciliation_monthly. "
           "Breakage e custo do Pix não variam com os filtros de nível e canal.")
 

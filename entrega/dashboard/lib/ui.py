@@ -43,8 +43,9 @@ def multiselect_all(label: str, options: list[str], key: str, help: str | None =
     return chosen or options
 
 
-def kpi(label: str, value: str, sub: str = "", status: tuple[str, str] | None = None) -> None:
-    """Cartão de KPI. status = (nível, texto), nível em good/warning/critical; sempre com ícone + texto."""
+def kpi(label: str, value: str, sub: str = "", status: tuple[str, str] | None = None) -> str:
+    """HTML de um cartão de KPI. status = (nível, texto), nível em good/warning/critical; sempre com ícone + texto.
+    Não desenha sozinho: passe uma lista de cartões para kpi_row()."""
     status_html = ""
     if status:
         level, text = status
@@ -52,11 +53,17 @@ def kpi(label: str, value: str, sub: str = "", status: tuple[str, str] | None = 
         status_html = (
             f'<div class="status"><span class="dot" style="background:{STATUS[level]}"></span>{icon} {text}</div>'
         )
-    st.markdown(
+    return (
         f'<div class="kpi"><div class="label">{label}</div><div class="value">{value}</div>'
-        f'<div class="sub">{sub}</div>{status_html}</div>',
-        unsafe_allow_html=True,
+        f'<div class="sub">{sub}</div>{status_html}</div>'
     )
+
+
+def kpi_row(cards: list[str]) -> None:
+    """Uma linha de big numbers num único grid: todos com a mesma altura, quebra de linha automática
+    em telas estreitas e nada sobrepõe o que vem abaixo."""
+    cards = [c for c in cards if c]
+    st.markdown(f'<div class="kpi-row" style="--n:{len(cards)}">{"".join(cards)}</div>', unsafe_allow_html=True)
 
 
 def source(text: str) -> None:

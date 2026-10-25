@@ -25,19 +25,17 @@ flow = flow[flow["year_month"].between(start, end)]
 # ------------------------------------------------------------------ breakage
 st.subheader("Breakage: o número correto não é 40%")
 last = flow.iloc[-1]
-k = st.columns(3)
-with k[0]:
+v = last["breakage_migrated_realized_pct"]
+pre = flow[flow["year_month"].isin(["2026-02", "2026-03", "2026-04"])]["expired_to_redeemed_pct"]
+ui.kpi_row([
     ui.kpi("Breakage do programa novo", f"{ui.br(last['breakage_new_program_realized_pct'], 1)}%",
-           "expirados ÷ creditados. Nada venceu: validade de 24 meses, 1º vencimento em 25/09/2027")
-with k[1]:
-    v = last["breakage_migrated_realized_pct"]
+           "expirados ÷ creditados. Nada venceu: validade de 24 meses, 1º vencimento em 25/09/2027"),
     ui.kpi("Breakage do saldo migrado", f"{ui.br(v, 1)}%", f"expirados ÷ migrados, acumulado até {last['year_month']}",
-           ("critical", "Acima do limite de 20%") if v > 20 else ("warning", "Perto do limite de 20%") if v >= 18 else ("good", "Abaixo de 20%"))
-with k[2]:
-    pre = flow[flow["year_month"].isin(["2026-02", "2026-03", "2026-04"])]["expired_to_redeemed_pct"]
-    if not pre.empty:
-        ui.kpi("Expiração ÷ resgate (fev-abr/2026)", f"{ui.br(pre.min(), 0)}% a {ui.br(pre.max(), 0)}%",
-               "provável origem do '40%'", ("warning", "Não é breakage: compara com resgate, não com emissão"))
+           ("critical", "Acima do limite de 20%") if v > 20 else ("warning", "Perto do limite de 20%") if v >= 18 else ("good", "Abaixo de 20%")),
+    ui.kpi("Expiração ÷ resgate (fev-abr/2026)", f"{ui.br(pre.min(), 0)}% a {ui.br(pre.max(), 0)}%",
+           "provável origem do '40%'", ("warning", "Não é breakage: compara com resgate, não com emissão"))
+    if not pre.empty else "",
+])
 
 c1, c2 = st.columns(2)
 with c1:

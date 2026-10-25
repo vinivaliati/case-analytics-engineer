@@ -63,12 +63,22 @@ def _pontua_dark() -> alt.theme.ThemeConfig:
 def css() -> str:
     return f"""
     <style>
-      .kpi {{ background:{SURFACE}; border:1px solid rgba(255,255,255,0.10); border-radius:10px; padding:14px 16px; height:100%; }}
-      .kpi .label {{ color:{INK_2}; font-size:0.85rem; }}
+      /* Cards de big number com tamanho padrão: mesma altura mínima para todos, conteúdo empilhado
+         e o status sempre no rodapé do card. A altura cresce se o texto precisar, sem invadir o que vem abaixo. */
+      /* Linha de big numbers = um grid: as células de uma linha têm sempre a mesma altura (a do card mais alto),
+         e em telas estreitas os cards descem para a linha de baixo em vez de espremer o texto. */
+      .kpi-row {{ display:grid; grid-template-columns:repeat(var(--n), minmax(0, 1fr)); gap:16px;
+                  align-items:stretch; margin:0 0 16px 0; }}
+      @media (max-width: 1100px) {{ .kpi-row {{ grid-template-columns:repeat(2, minmax(0, 1fr)); }} }}
+      @media (max-width: 640px) {{ .kpi-row {{ grid-template-columns:1fr; }} }}
+      .kpi {{ background:{SURFACE}; border:1px solid rgba(255,255,255,0.10); border-radius:10px; padding:14px 16px;
+              box-sizing:border-box; min-height:200px; height:100%;
+              display:flex; flex-direction:column; overflow-wrap:anywhere; }}
+      .kpi .label {{ color:{INK_2}; font-size:0.85rem; line-height:1.3; }}
       .kpi .value {{ color:{INK}; font-size:1.9rem; font-weight:600; line-height:1.2; margin-top:4px; }}
-      .kpi .sub {{ color:{MUTED}; font-size:0.8rem; margin-top:4px; }}
-      .kpi .status {{ font-size:0.8rem; margin-top:6px; color:{INK_2}; }}
+      .kpi .sub {{ color:{MUTED}; font-size:0.8rem; line-height:1.35; margin-top:4px; }}
+      .kpi .status {{ font-size:0.8rem; line-height:1.35; margin-top:auto; padding-top:8px; color:{INK_2}; }}
       .kpi .dot {{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }}
-      .source {{ color:{MUTED}; font-size:0.78rem; margin-top:-6px; }}
+      .source {{ color:{MUTED}; font-size:0.78rem; margin-top:4px; margin-bottom:8px; }}
     </style>
     """

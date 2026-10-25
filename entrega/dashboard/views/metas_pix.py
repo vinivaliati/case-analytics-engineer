@@ -38,16 +38,14 @@ shares = data.goal_shares(filtered, view_col, exclude_pix=view.startswith("Sem P
 st.subheader("Metas contratuais")
 months_below = int((shares.get("varejo", pd.Series(dtype=float)) < 20).sum())
 months_air_ok = int((shares.get("aereas", pd.Series(dtype=float)) >= 50).sum())
-k = st.columns(3)
-with k[0]:
-    ui.kpi("Meses com aéreas ≥ 50%", f"{months_air_ok} de {len(shares)}", view)
-with k[1]:
-    ui.kpi("Meses com varejo < 20%", f"{months_below} de {len(shares)}", view)
-with k[2]:
-    last = shares.iloc[-1] if len(shares) else None
-    if last is not None:
-        ui.kpi(f"Varejo em {last['year_month']}", f"{ui.br(last.get('varejo', 0), 1)}%", view,
-               ("good", "Meta cumprida") if last.get("varejo", 0) >= 20 else ("critical", "Abaixo da meta de 20%"))
+last = shares.iloc[-1] if len(shares) else None
+ui.kpi_row([
+    ui.kpi("Meses com aéreas ≥ 50%", f"{months_air_ok} de {len(shares)}", view),
+    ui.kpi("Meses com varejo < 20%", f"{months_below} de {len(shares)}", view),
+    ui.kpi(f"Varejo em {last['year_month']}", f"{ui.br(last.get('varejo', 0), 1)}%", view,
+           ("good", "Meta cumprida") if last.get("varejo", 0) >= 20 else ("critical", "Abaixo da meta de 20%"))
+    if last is not None else "",
+])
 
 c1, c2 = st.columns(2)
 with c1:
@@ -78,18 +76,15 @@ pix = pix[pix["year_month"].between(start, end)]
 if pix.empty:
     st.info("O Pix foi lançado em 27/05/2026: escolha um período que inclua mai a set/2026.")
 else:
-    k = st.columns(4)
-    with k[0]:
+    share_bad = pix["non_effective_points"].sum() / pix["all_status_points"].sum() * 100
+    ui.kpi_row([
         ui.kpi("Custo real por ponto", f"R$ {ui.br(pix['effective_brl'].sum() / pix['effective_points'].sum(), 4)}",
-               "R$ creditados ÷ pontos dos resgates efetivos")
-    with k[1]:
+               "R$ creditados ÷ pontos dos resgates efetivos"),
         ui.kpi("Operador reporta", f"R$ {ui.br(pix['operator_brl'].sum() / pix['operator_points'].sum(), 4)}",
-               "R$ pagos ÷ pontos de todos os status", ("critical", "Bases diferentes no numerador e no denominador"))
-    with k[2]:
-        share_bad = pix["non_effective_points"].sum() / pix["all_status_points"].sum() * 100
-        ui.kpi("Pontos contados pelo operador sem pagamento", f"{ui.br(share_bad, 1)}%", "cancelados, inválidos, estornados, aguardando")
-    with k[3]:
-        ui.kpi("Dinheiro pago via Pix", f"R$ {ui.br_compact(pix['effective_brl'].sum())}", f"{start} a {end}")
+               "R$ pagos ÷ pontos de todos os status", ("critical", "Mistura bases diferentes")),
+        ui.kpi("Pontos Pix não pagos", f"{ui.br(share_bad, 1)}%", "contados pelo operador: cancelados, inválidos, estornados e aguardando"),
+        ui.kpi("Dinheiro pago via Pix", f"R$ {ui.br_compact(pix['effective_brl'].sum())}", f"{start} a {end}"),
+    ])
 
     c1, c2 = st.columns(2)
     with c1:
