@@ -5,11 +5,18 @@ profile: pontua
 model-paths: ["models"]
 test-paths: ["tests"]
 macro-paths: ["macros"]
+seed-paths: ["seeds"]
 
 vars:
   # Fuso de referência de todo o projeto. Pedidos, ledger e cartões já vêm em -03:00;
   # o CRM vem em UTC (confirmado: Order Approved = orders.created_at + 3h em 17.385 de 17.494 eventos).
   local_tz: "America/Sao_Paulo"
+  # Lançamento do Pontos no Pix (README do case) e data da extração dos dados.
+  pix_launch_date: "2026-05-27"
+  extraction_date: "2026-10-01"
+  # Faixa do calendário (dim_date): cobre movimentos (2025-09) até a maior validade de pontos (2028-09).
+  calendar_start: "2025-09-01"
+  calendar_end: "2028-12-31"
 
 models:
   pontua:
@@ -22,3 +29,7 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+seeds:
+  pontua:
+    +schema: seeds

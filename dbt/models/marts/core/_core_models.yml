@@ -1,0 +1,286 @@
+version: 2
+
+models:
+  # ---------------------------------------------------------------- dimensões
+  - name: dim_date
+    description: "Calendário. Grão: 1 linha por dia, de calendar_start a calendar_end (vars do projeto)."
+    columns:
+      - name: date_key
+        description: "PK. Data no formato inteiro yyyymmdd."
+        tests: [unique, not_null]
+      - name: date_day
+        description: Data.
+        tests: [unique, not_null]
+      - name: month_start
+        description: Primeiro dia do mês.
+      - name: year_month
+        description: "Mês no formato yyyy-mm."
+      - name: is_after_pix_launch
+        description: "Verdadeiro a partir de 27/05/2026, lançamento do Pontos no Pix."
+      - name: is_before_extraction
+        description: "Verdadeiro antes de 01/10/2026, data da extração. Dias depois disso não têm dados."
+
+  - name: dim_account
+    description: "Contas de cartão. Grão: 1 linha por conta. Linha '-1' = conta desconhecida."
+    columns:
+      - name: account_key
+        description: "PK. Hash de account_id."
+        tests: [unique, not_null]
+      - name: account_id
+        description: Identificador da conta na origem.
+      - name: customer_key
+        description: "FK para dim_customer."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: card_class
+        description: Nível do cartão desta conta. É o nível usado nas análises por nível (decisão documentada).
+      - name: card_class_rank
+        description: "Ordem do nível: 1 = Essencial ... 6 = Black (seed card_classes)."
+      - name: card_brand
+        description: Bandeira.
+      - name: is_most_recent
+        description: Conta mais recente do cliente.
+
+  - name: dim_customer
+    description: "Clientes. Grão: 1 linha por user_id. Linha '-1' = cliente desconhecido."
+    columns:
+      - name: customer_key
+        description: "PK. Hash de user_id."
+        tests: [unique, not_null]
+      - name: user_id
+        description: Identificador do cliente na origem.
+      - name: current_card_class
+        description: Nível da conta mais recente do cliente. Alternativa ao nível da conta, caso o negócio prefira.
+      - name: accounts_count
+        description: Quantidade de contas do cliente.
+
+  - name: dim_product
+    description: "Produtos de resgate. Grão: 1 linha por fornecedor x responsável x tipo de produto x categoria macro."
+    columns:
+      - name: product_key
+        description: "PK. Hash das quatro colunas do grão."
+        tests: [unique, not_null]
+      - name: supplier_name
+        description: Fornecedor.
+      - name: supplier_responsible
+        description: Fornecedor responsável (difere em revendas).
+      - name: product_type
+        description: "PASSAGEM, PRODUTO, TRANSFERENCIA ou COMPRA_PONTOS."
+      - name: category_macro
+        description: "Categoria macro da origem (Aereas, Varejo, Cashback). Não é a classificação das metas."
+      - name: is_pix
+        description: "Resgate via Pontos no Pix (fornecedor 'Pix Pontua+')."
+      - name: is_points_purchase
+        description: "Compra de pontos com dinheiro: não é resgate, não debita pontos."
+
+  - name: dim_operation
+    description: "Tipos de movimento do ledger. Grão: 1 linha por operation_code."
+    columns:
+      - name: operation_key
+        description: "PK. Hash de operation_code."
+        tests: [unique, not_null]
+      - name: operation_code
+        description: Código na origem.
+        tests: [unique, not_null]
+      - name: direction
+        description: CREDIT ou DEBIT.
+      - name: is_migration
+        description: Movimento ligado aos saldos migrados do programa anterior.
+      - name: is_expiration
+        description: Movimento de expiração de pontos.
+
+  - name: dim_campaign
+    description: "Campanhas do CRM. Grão: 1 linha por campaign_id. Linha '-1' = evento sem campanha."
+    columns:
+      - name: campaign_key
+        description: "PK. Hash de campaign_id."
+        tests: [unique, not_null]
+      - name: campaign_id
+        description: Identificador na ferramenta de CRM.
+      - name: campaign_name
+        description: "Nome mais frequente em event_properties.campaign_name."
+      - name: campaign_channels
+        description: Canais em que a campanha rodou.
+
+  # ---------------------------------------------------------------- fatos
+  - name: fct_redemption_items
+    description: "Fato transacional de itens de pedido. Grão: 1 linha por item (todos os status). Um resgate efetivo é APROVADO ou ESTORNADO com pontos debitados; a regra fica na camada de consumo."
+    columns:
+      - name: order_item_id
+        description: "PK. Identificador do item."
+        tests: [unique, not_null]
+      - name: order_id
+        description: Pedido (dimensão degenerada).
+        tests: [not_null]
+      - name: product_key
+        description: "FK para dim_product."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: customer_key
+        description: "FK para dim_customer (via orders.cart_id -> carts.user_id)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: item_date_key
+        description: "FK para dim_date (data local de criação do item)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: item_status
+        description: Status do item.
+      - name: order_status
+        description: Status do pedido.
+      - name: sales_channel
+        description: APP ou WEB.
+      - name: paid_points
+        description: Pontos pagos segundo order_items. Nulo em COMPRA_PONTOS.
+      - name: paid_brl
+        description: Parte paga em dinheiro (R$).
+      - name: product_value_brl
+        description: Valor do produto (R$). Em Pix, é o valor creditado ao cliente.
+      - name: points_debited
+        description: Pontos efetivamente debitados (soma de RESGATE em redeemed_points). 0 quando não houve débito.
+      - name: paying_accounts_count
+        description: Quantidade de contas que pagaram o item. Maior que 1 em 1.471 itens.
+
+  - name: fct_points_movements
+    description: "Fato transacional do ledger. Grão: 1 linha por movimento."
+    columns:
+      - name: movement_id
+        description: "PK. Identificador do movimento."
+        tests: [unique, not_null]
+      - name: account_key
+        description: "FK para dim_account."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: customer_key
+        description: "FK para dim_customer."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: operation_key
+        description: "FK para dim_operation."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_operation')
+                field: operation_key
+      - name: movement_date_key
+        description: "FK para dim_date (data local do movimento)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: valid_until_date_key
+        description: "FK para dim_date (validade). Nulo em débitos e estornos."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: points
+        description: Pontos com sinal (+ crédito, - débito).
+      - name: credit_points
+        description: Parte positiva de points.
+      - name: debit_points
+        description: Parte negativa de points, em módulo.
+
+  - name: fct_crm_events
+    description: "Fato transacional do CRM. Grão: 1 linha por evento distinto."
+    columns:
+      - name: crm_event_key
+        description: "PK. Hash de todas as colunas do evento."
+        tests: [unique, not_null]
+      - name: customer_key
+        description: "FK para dim_customer. '-1' quando o evento não tem user_id."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: campaign_key
+        description: "FK para dim_campaign. '-1' quando não há campanha."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_campaign')
+                field: campaign_key
+      - name: event_date_key
+        description: "FK para dim_date (data local do evento)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: event_name
+        description: Tipo do evento.
+      - name: campaign_type
+        description: Canal do evento.
+      - name: event_count
+        description: Sempre 1. Facilita somas em ferramentas de BI.
+
+  - name: fct_points_balance_monthly
+    description: "Snapshot periódico de saldo. Grão: 1 linha por conta x mês, do primeiro mês com movimento até set/2026."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [account_key, month_date_key]
+    columns:
+      - name: points_balance_key
+        description: "PK. Hash de account_id + mês."
+        tests: [unique, not_null]
+      - name: account_key
+        description: "FK para dim_account."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: customer_key
+        description: "FK para dim_customer."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: month_date_key
+        description: "FK para dim_date (primeiro dia do mês)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: closing_balance_points
+        description: Saldo da conta ao fim do mês (soma acumulada de todos os movimentos).
+      - name: net_change_points
+        description: Variação líquida do saldo no mês.

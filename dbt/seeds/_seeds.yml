@@ -1,0 +1,16 @@
+version: 2
+
+seeds:
+  - name: card_classes
+    description: "Ordem dos níveis de cartão, informada pelo time de dados: Essencial < Gold < Platinum < Platinum Elo < Infinite < Black."
+    config:
+      column_types:
+        card_class: varchar
+        card_class_rank: integer
+    columns:
+      - name: card_class
+        description: Nome do nível.
+        tests: [unique, not_null]
+      - name: card_class_rank
+        description: "1 = mais simples, 6 = mais alto."
+        tests: [unique, not_null]

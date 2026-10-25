@@ -29,4 +29,6 @@ Arquivo de trabalho: acumula o que deve entrar no README e na apresentação. Ca
 - Nenhuma fonte tem linhas duplicadas, nem pela chave nem pela linha inteira.
 - No ledger, CREDIT tem sempre pontos > 0 e DEBIT sempre < 0 (teste `assert_sinal_do_ledger_bate_com_direcao`).
 - Para itens APROVADO e ESTORNADO, a soma de `RESGATE` em `redeemed_points` = `order_items.paid_points` (17.823 itens). Itens CANCELADO, INVALIDO e AGUARDANDO_CONFIRMACAO não têm movimento de pontos.
+- **O saldo de pontos é por cliente, não por conta.** Em set/2026, 1.197 contas têm saldo negativo (−20,0 mi pontos), mas somando as contas de cada cliente nenhum fica negativo. O resgate debita de uma conta do cliente usando saldo acumulado em outras.
+- 1.471 itens são pagos por mais de uma conta; em 820 deles as contas têm níveis de cartão diferentes.
 - Todo user_id e account_id do ledger, carrinhos, resgates e CRM existe em `cards`; o user_id do ledger bate com o dono da conta.
