@@ -98,3 +98,9 @@ Uma entrada por sessão, da mais antiga para a mais recente. Formato e regras em
 - **O que a IA fez ou sugeriu:** passou o roteiro de deploy no Streamlit Community Cloud (arquivo principal, branch, versão do Python e secrets em TOML) e o texto do PR a ser aberto pelo navegador (gh CLI indisponível).
 - **O que o candidato conferiu, corrigiu ou rejeitou:** vai abrir o PR e fazer o deploy manualmente.
 - **Arquivos criados ou alterados:** AI_LOG.md.
+
+### 2026-10-25T16:02:21-03:00 · Claude Code (VS Code) · Claude Opus 5.5
+- **Pedido:** o candidato fez o deploy no Streamlit Community Cloud e pediu para colocar o link no README.
+- **O que a IA fez ou sugeriu:** adicionou o link do app publicado no topo do README e na tabela de entregáveis. Antes disso, avisou que fazer merge direto na main impediria abrir o PR de entrega; o candidato preferiu manter a main intocada e apontar o deploy para a branch entrega.
+- **O que o candidato conferiu, corrigiu ou rejeitou:** escolheu não fazer merge na main.
+- **Arquivos criados ou alterados:** README.md, AI_LOG.md.

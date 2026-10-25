@@ -4,10 +4,13 @@ Entrega do exercício 1 (Programa Pontua+). O enunciado original está em [conte
 
 **Resposta curta para a diretoria:** o Pix **somou volume** (de 18,9 para 31,0 mi pontos/mês) em vez de tirar resgates de aéreas e varejo. Ele derrubou os **percentuais** das metas: varejo está em 12,9%, abaixo da meta de 20% desde jun/2026, e aéreas em 59,1%, ainda acima de 50%. Além disso, o Pix é a modalidade mais cara (R$ 0,019/ponto). **As três afirmações não se sustentam.** A recomendação é coibir o Pix com calibragem (taxa e teto), renegociar o denominador das metas e corrigir o relatório do operador.
 
+**Dashboard + agente no ar:** https://vinivaliati-case-analytics-engineer-entregadashboardapp-qytb2d.streamlit.app/
+
 ## Entregáveis
 
 | Peça | Onde |
 |---|---|
+| **Dashboard publicado** (Streamlit Community Cloud, branch `entrega`) | https://vinivaliati-case-analytics-engineer-entregadashboardapp-qytb2d.streamlit.app/ |
 | Apresentação para a diretoria | [entrega/apresentacao/index.html](entrega/apresentacao/index.html) (abrir no navegador; `?static` desliga animação para PDF) |
 | Apresentação técnica | [entrega/apresentacao/tecnica.html](entrega/apresentacao/tecnica.html) |
 | Código e testes (dbt + DuckDB) | [entrega/dbt/](entrega/dbt/) · build: [entrega/scripts/build.py](entrega/scripts/build.py) |
