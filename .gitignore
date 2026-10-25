@@ -12,3 +12,6 @@ entrega/dbt/*.duckdb.wal
 entrega/dbt/.user.yml
 .streamlit/secrets.toml
 entrega/dashboard/.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.pytest_cache/
