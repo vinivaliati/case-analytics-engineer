@@ -1,147 +1,168 @@
-# Case Analytics Engineer · Brain003   
-  
-Exercício 1. Programa Pontua+
+# Case Analytics Engineer · Pontua+ (Brain003)
 
-> Todos os dados, nomes e números deste case são fictícios e foram gerados para o processo seletivo.
-> Versão dos dados: **v1**. O arquivo `MANIFESTO_v1.csv` lista os 9 CSVs com contagens de linhas e impressão digital (SHA-256).
+Entrega do exercício 1 (Programa Pontua+). O enunciado original está em [contexto/enunciado.md](contexto/enunciado.md).
 
-## O contexto
+**Resposta curta para a diretoria:** o Pix **somou volume** (de 18,9 para 31,0 mi pontos/mês) em vez de tirar resgates de aéreas e varejo. Ele derrubou os **percentuais** das metas: varejo está em 12,9%, abaixo da meta de 20% desde jun/2026, e aéreas em 59,1%, ainda acima de 50%. Além disso, o Pix é a modalidade mais cara (R$ 0,019/ponto). **As três afirmações não se sustentam.** A recomendação é coibir o Pix com calibragem (taxa e teto), renegociar o denominador das metas e corrigir o relatório do operador.
 
-O **Pontua+** é o programa de pontos dos cartões de crédito do Banco Aurora. Quem usa o cartão acumula pontos e troca por passagens aéreas, produtos de varejo ou transferências para programas parceiros. O programa é operado por uma empresa do grupo, que presta contas ao banco todo mês com um relatório (`relatorio_mensal_cliente.csv`).
+## Entregáveis
 
-Em **27/05/2026** o programa lançou o **Pontos no Pix**: o cliente troca pontos por dinheiro na conta, a R$ 0,019 por ponto. Cada 53 pontos equivael a aproximadamente R$1. O resgate nessa modalidade disparou.
+| Peça | Onde |
+|---|---|
+| Apresentação para a diretoria | [entrega/apresentacao/index.html](entrega/apresentacao/index.html) (abrir no navegador; `?static` desliga animação para PDF) |
+| Apresentação técnica | [entrega/apresentacao/tecnica.html](entrega/apresentacao/tecnica.html) |
+| Código e testes (dbt + DuckDB) | [entrega/dbt/](entrega/dbt/) · build: [entrega/scripts/build.py](entrega/scripts/build.py) |
+| Dashboard (Streamlit, 4 telas + agente) | [entrega/dashboard/](entrega/dashboard/) |
+| Estrutura de dados para dashboard e agente | [entrega/docs/arquitetura_dados.md](entrega/docs/arquitetura_dados.md) |
+| Agente analista (Gemini) | [agente/](agente/) · exemplos reais: [agente/exemplos.md](agente/exemplos.md) |
+| Análise das afirmações | [entrega/docs/analise_afirmacoes.md](entrega/docs/analise_afirmacoes.md) |
+| Benchmark de breakage (case Multiplus) | [entrega/docs/benchmark_breakage.md](entrega/docs/benchmark_breakage.md) |
+| Registro de uso de IA | [AI_LOG.md](AI_LOG.md) |
 
-O contrato com o banco tem duas metas sobre o total de pontos resgatados: trocas por passagens **aéreas devem ser pelo menos 50%** do volume de pontos trocados e **varejo pelo menos 20%**.   
-  
-Passagens aéreas custam mais caro ao programa do que o banco paga por ponto, sendo assim, mais desvantajoso para o programa (como empresa) e o varejo é onde o grupo tem parceiros próprios, (sendo mais vantajoso)
+## Como reconstruir e rodar
 
-A diretoria vai decidir na semana que vem qual ação tomar para estimular ou coibir o resgate via Pix.  
-  
-Antes, quer entender o que aconteceu. E também se vale a pena estimular ou coibir o resgate tendo em vista as metas de aéreas e varejo e a própria saúde financeira do programa.  
-Ela também ouviu duas afirmações e quer saber se são verdade:
+Pré-requisito: Python 3.12+ (testado em 3.14). Os CSVs ficam em `contexto/dados/`. Para usar outra pasta, defina `PONTUA_DADOS_DIR`.
 
-- do time de CRM: "a comunicação de lançamento explica o sucesso do Pix";
-- do relatório do operador: "Na verdade o Pix sai a cerca de R$ 0,016 por ponto, abaixo dos R$ 0,019 anunciados".
-- De um diretor: “nosso breakage está em 40%! Nossa meta é não passar de 20%!"
+```bash
+python -m venv .venv && .venv/Scripts/activate        # Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt
 
-## A descoberta faz parte do exercício
+python entrega/scripts/build.py                        # 1) confere SHA-256, roda dbt (242 testes), exporta Parquet + dicionário
+python -m pytest agente/tests entrega/dashboard/tests  # 2) 19 testes do agente e do dashboard
+python entrega/apresentacao/gerar_decks.py             # 3) regenera as apresentações a partir dos dados
+streamlit run entrega/dashboard/app.py                 # 4) dashboard + agente
+```
 
-Não fornecemos um dicionário de dados. Explore os arquivos para identificar tipos, campos vazios, grãos, chaves, relacionamentos e regras relevantes para a análise. Documente esse entendimento no `README`, incluindo as evidências que sustentam suas escolhas.
+- **Nada é editado à mão.** O `build.py` falha se um CSV divergir do MANIFESTO, se um teste do dbt falhar ou se alguma coluna publicada estiver sem descrição.
+- **Os números da apresentação** são lidos dos marts pelo `gerar_decks.py`.
+- **Os Parquets agregados já estão versionados** em `entrega/dashboard/data/` (300 KB, sem dado linha a linha). O dashboard sobe em produção sem rodar o dbt.
 
-Registre as hipóteses utilizadas e as perguntas que faria aos responsáveis pelos sistemas ou pelo negócio. Diferencie o que foi confirmado nos dados do que depende de validação adicional. Quando uma informação não puder ser estabelecida com os arquivos disponíveis, explique a limitação e o que precisaria para avançar. Hipóteses alternativas fundamentadas serão consideradas na avaliação.
+### Agente: chave do Gemini
 
-## O que pedimos
+| Variável | Obrigatória | Uso |
+|---|---|---|
+| `GEMINI_API_KEY` | sim | chave da API do Gemini |
+| `GEMINI_MODEL` | não | padrão `gemini-3.8-flash` |
+| `GEMINI_FALLBACK_MODEL` | não | reservas separadas por vírgula, usadas em 429/503; padrão `gemini-3.6-flash,gemini-3.5-flash,gemini-3.5-flash-lite` |
 
-Tempo de trabalho: **2 horas**. 
+- **Local:** copie [.env.example](.env.example) para `.env` (que está no `.gitignore`).
+- **Produção (Streamlit Community Cloud):** aponte o app para `entrega/dashboard/app.py` e coloque as mesmas chaves em *Settings › Secrets*. A chave só é lida no servidor e nunca vai para o navegador.
+- **Linha de comando:** `python -m agente "As metas foram cumpridas em setembro?"`.
 
-**O que pedimos**
+> O enunciado cita Vercel como exemplo. Streamlit não roda no Vercel; a escolha foi o Streamlit (decisão do candidato) com deploy no Streamlit Community Cloud.
 
-A. **Apresentação Estratégica:** Monte uma apresentação para o board com a estrutura de apresentação executiva respondendo:
-1. O que aconteceu com os resgates depois do Pix e o que isso significa para as metas e para o programa.
-2. Avalie as três afirmações.
-3. Uma recomendação de ações e próximos passos sugeridos para a diretoria.
-4. **Dashboard estratégico:** A diretoria vai acompanhar as principais métricas do programa por um dashboard. Monte o dashboard e a estrutura de dados por trás dele para responder às principais perguntas de negócio da diretoria. Os mesmos dados também serão consumidos por um agente de IA: desenhe uma estrutura que atenda aos dois (dashboard e agente) e justifique suas escolhas (camadas, grão, métricas, nomes, documentação, como o agente descobre o que cada campo significa).
-5. **Agente Analista:** Se ainda tiver tempo, desenvolva o agente que responde perguntas da diretoria sobre esses dados. Veja *Chave de LLM para o agente* abaixo.
-6. **Apresentação técnica:** Uma apresentação explicando rapidamente suas decisões técnicas sobre a organização dos dads, arquitetura do agente e do dashboard.
-
-**Regras da entrega**
-
-- Os dados não vêm com dicionário. Entender os arquivos faz parte do exercício.
-- Todos os números precisam sair de código executável (SQL e/ou Python, dbt opcional), com o grão de cada modelo declarado e **testes que garantam que os números estão certos.**
-- No README, **separe o que foi confirmado nos dados do que é hipótese e liste o que você perguntaria ao negócio ou aos donos dos sistemas.**
-- Tempo sugerido: 4 horas. Informe quanto tempo levou. Se não terminar, entregue o que rodou e diga como seguiria.
-- Pode (DEVE) usar IA. Queremos ver como você usa e o que você confere.
-
-## O que entregar
-
-Quatro peças em formato zip ou em um git (cinco, se fizer o agente).
-
-1. **Apresentação para a diretoria.** Mostra o que aconteceu, avalia as três afirmações e termina com a sua recomendação. Cada ponto da recomendação precisa trazer o número que o sustenta e dizer o que ainda falta saber. A apresentação será usada na devolutiva. Em HTML, partindo do modelo em `apresentacao-modelo/` (veja *Contrato de entrega*).
-2. **Código e testes.** Todos os números da apresentação saem daqui, com SQL e/ou Python (dbt é opcional).
-3. **README.** Precisa permitir que um avaliador reconstrua tudo a partir dos CSVs, sem editar nada à mão. Nele também ficam o que você entendeu dos dados, como modelou, as hipóteses que assumiu, o que perguntaria ao negócio ou aos donos dos sistemas e um registro breve do uso de IA (o que você pediu e o que conferiu ou corrigiu, subagentes e/ou skills que utilizou).
-4. **Dashboard e estrutura de dados.** O dashboard (link acessível aos avaliadores, arquivo ou instruções para subir localmente), os modelos que o alimentam e a justificativa da estrutura para dashboard e agente. Ferramenta livre.
-5. **Agente (opcional).** Código, instruções para rodar e exemplos de perguntas e respostas, incluindo pelo menos uma pergunta que ele deveria se recusar a responder ou responder com ressalva.
-
-## Contrato de entrega (estrutura obrigatória)
-
-Vamos abrir todas as entregas da mesma forma. Organize o repositório assim:
+## Estrutura
 
 ```
+contexto/            material original do case (dados, MANIFESTO, modelo de apresentação, enunciado)
 entrega/
-  apresentacao/index.html   # deck HTML, autocontido (img/ e lib/ ao lado)
-  dashboard/                # dashboard: build estático, arquivo ou app que sobe com o comando do README
-agente/                     # opcional; um único ponto de entrada documentado no README
-README.md
-AI_LOG.md
+  dbt/               staging → intermediate → core (Kimball) → analytics + serving
+  scripts/build.py   comando único de reconstrução
+  dashboard/         Streamlit (app.py, views/, lib/, data/ = Parquets publicados, tests/)
+  apresentacao/      index.html (diretoria), tecnica.html, gerar_decks.py
+  docs/              arquitetura, análise, benchmark, notas
+agente/              agente analista (ponto de entrada: agente.agent.ask / python -m agente)
 ```
 
-- **Apresentação.** Copie `apresentacao-modelo/` para `entrega/apresentacao/` e edite os slides. O guia visual da Brain está em `apresentacao-modelo/design-v3.md` (cores, tipografia, componentes) e `apresentacao-modelo/SLIDES.md` (componentes e templates de slide). O modelo traz exemplos ilustrativos: substitua todo o conteúdo pelo do case. Abra direto no navegador; `?static` na URL desliga a animação e serve para exportar PDF. Se preferir outra ferramenta, entregue também um PDF em `entrega/apresentacao/`.
-- **Dashboard.** Só dados agregados. Nada de dados linha a linha no build publicado.
-- **Agente.** Lê `GEMINI_API_KEY` (e opcionalmente `GEMINI_MODEL`) de variável de ambiente. A chave nunca vai para o navegador.
+## O que entendi dos dados
 
-## Chave de LLM para o agente
+**Grão e chaves.** As chaves foram verificadas por testes `unique`, `not_null` e `relationships`.
 
-Você não precisa gastar dinheiro com o agente.
+| Arquivo | Grão | Chave | Relações e observações |
+|---|---|---|---|
+| `orders` | pedido | `order_id` | `cart_id` → carts. **`user_id` 100% vazio**: o usuário vem de `carts.user_id` |
+| `order_items` | item de pedido | `order_item_id` | `order_id` → orders. `quantity` sempre 1. `paid_points` vazio só em `COMPRA_PONTOS` |
+| `carts` | carrinho | `cart_id` | `user_id`, canal APP/WEB |
+| `redeemed_points` | movimento de pontos por item | **sem chave natural** (surrogate = hash da linha) | 1.471 itens pagos por mais de uma conta; RESERVA + CANCELADO_RESERVA sempre se anulam |
+| `points_ledger` | movimento de saldo | `movement_id` | `operation_code` → dim_operation; o sinal bate com CREDIT/DEBIT (testado) |
+| `dim_operation` | tipo de operação | `operation_code` | 7 operações, inclusive as de migração |
+| `cards` | conta de cartão | `account_id` | 12.000 clientes, 16.168 contas, exatamente 1 `is_most_recent` por cliente |
+| `crm_events` | evento | **sem chave natural** (hash) | `event_ts` **em UTC** (os outros sistemas estão em -03:00); `control_group` 100% vazio |
+| `relatorio_mensal_cliente` | mês | `mes` | números autodeclarados pelo operador, usados só para reconciliar |
 
-- Durante o desenvolvimento, use a chave e o provedor que preferir. Sugestão: a camada gratuita da API do Gemini, com chave criada em https://aistudio.google.com/apikey usando qualquer conta Google. Ela basta para o volume deste case. Outros provedores com cota gratuita ou um modelo local (Ollama ou similar) também servem.
-- **Na avaliação, vamos publicar o seu projeto em produção (por exemplo, no Vercel) e rodar o agente com a nossa chave do Gemini.** Por isso:
-  - o agente precisa funcionar com o Gemini, mesmo que você tenha desenvolvido com outro provedor;
-  - a chave deve ser lida de variável de ambiente, e o nome dela deve estar documentado no README;
-  - o README deve trazer um único comando ou passo a passo curto para subir o dashboard e o agente.
-- Guarde a chave em `.env` (já está no `.gitignore`). **Nunca faça commit de chave.**
+**Datas.** Pedidos, ledger e cartões vêm com offset `-03:00`. O CRM vem sem offset e está em UTC: o evento `Order Approved` acontece exatamente 3h depois de `orders.created_at` em 17.385 de 17.494 eventos. Tudo foi convertido para America/Sao_Paulo.
 
-## Como enviar
+**Dedup.** Nenhuma fonte tem duplicata, nem pela chave nem pela linha inteira. O dedup do staging fica como proteção.
 
-Envie um arquivo `.zip` com a solução ou um link para um repositório acessível aos avaliadores (@brain-yurikaminski, @brain-leonardo-andrade)pelo mesmo canal em que recebeu o case. O prazo de entrega é o alinhado entre vc e o recrutador. Inclua as respostas, o código, os testes e o `README`. Se a execução depender dos CSVs fornecidos, documente onde colocá-los.
+### Confirmado nos dados
 
-Registre as dúvidas e eventuais esclarecimentos recebidos no `README`.
+- **Resgate efetivo:** em itens APROVADO e ESTORNADO, o RESGATE de `redeemed_points` é igual a `paid_points` (17.823 itens). Os ESTORNADO são devolvidos no ledger cerca de 7 dias depois (207 de 220 casam). Há devolução parcial em 103 aprovados.
+- **O saldo é uma carteira por cliente:** 1.197 contas fecham negativas em set/2026, mas nenhum cliente fica negativo.
+- **Validade:** o crédito do programa novo vale 24 meses e **nada venceu até a extração**. O saldo migrado (324 mi pontos) expira cerca de 7 mi por mês desde jan/2026.
+- **Metas:** a definição do operador (`category_macro`, com transferências e agência dentro de varejo) reproduz o relatório com até 1,5 p.p. de diferença.
+- **Pix:** custa R$ 0,0190 por ponto em todos os meses. O operador divide os reais pagos pelos pontos de **todos** os status (bate exato).
+- **CRM:** a adoção do Pix é igual entre quem recebeu e quem não recebeu comunicação. Só 6% dos que receberam o e-mail usaram o Pix na mesma semana.
+- **12/01/2026:** 1.517 resgates aéreos e 75,9 mi pontos num único dia, distribuídos nas 24h, sem campanha no CRM.
 
-## Como vamos avaliar
+### Hipóteses e decisões (revisáveis)
 
-Vamos avaliar análise e engenharia com o mesmo peso. Importa a qualidade do raciocínio, das evidências e do julgamento, não a quantidade de coisas entregues. Escolhas diferentes de ferramenta, arquitetura ou interpretação são bem-vindas quando fundamentadas. Na devolutiva, você vai defender suas escolhas, inclusive as que fez com ajuda de IA.
+1. **Nível de cartão = nível atual do cliente.** O saldo é por cliente e 820 itens misturam níveis. A alternativa por conta está pronta em `dim_account`.
+2. **Resgate efetivo = APROVADO, líquido de devoluções.** O impacto é de no máximo 0,11 p.p. e nenhum mês muda de status de meta.
+3. **Metas pela definição do operador**, com a visão estrita e a visão sem Pix como sensibilidade. As regras ficam na tabela de referência `goal_categories`, que em produção seria uma tabela governada pelo negócio.
+4. **Breakage = expirados ÷ emitidos, por safra e por origem** (IFRS 15; a Multiplus operou entre 21% e 24%).
+5. **Custo por ponto ≈ valor do produto − dinheiro pago pelo cliente.** O preço que o banco paga não está nos dados.
+6. **Linha de base antes do Pix = fev a 26/mai/2026.** Jan/2026 fica de fora por causa de 12/01. A causa de 12/01 é hipótese: promoção não registrada no CRM.
+7. **CRM tratado como UTC.**
 
-## Os dados (`dados/`)
+### Perguntas ao negócio e aos donos dos sistemas
 
-Nove arquivos CSV separados por vírgula, com cabeçalho e codificação UTF-8. Os valores monetários estão em reais (R$). Datas e horas mantêm os formatos dos sistemas de origem; identifique e documente como você as interpreta nas análises.
+1. O contrato conta o Pix no denominador das metas? Transferências a parceiros e a Decola Viagens contam como varejo?
+2. Quanto o banco paga por ponto, e em que momento (emissão ou resgate)? Qual o custo real dos parceiros de varejo do grupo?
+3. O que aconteceu em 12/01/2026?
+4. Por que o saldo migrado expira desde jan/2026 se o `valid_until` dele é 31/03/2028?
+5. Qual definição de breakage gerou o "40%"?
+6. **Operador:** qual a regra do R$ do Pix? Ele fica 0,2% a 0,7% abaixo do pago.
+7. **Ingestão:**
+   - `orders.user_id` vem vazio;
+   - o CRM vem sem offset e sem `event_id`;
+   - `redeemed_points` vem sem `movement_id`;
+   - `control_group` vem vazio.
 
+   Detalhes em [entrega/docs/notas_para_readme.md](entrega/docs/notas_para_readme.md).
 
-| Arquivo                        | Finalidade geral                                          | Colunas                                                                                                                                                                              |
-| ------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `orders.csv`                   | Registros do sistema de pedidos                           | order_id, cart_id, user_id, created_at, status, status_updated_at                                                                                                                    |
-| `order_items.csv`              | Produtos e valores associados aos pedidos                 | order_item_id, order_id, created_at, status, product_type, supplier_name, supplier_responsible, category_macro, paid_points, paid_currency, product_value, refunded_points, quantity |
-| `carts.csv`                    | Carrinhos e canais de compra                              | cart_id, user_id, channel                                                                                                                                                            |
-| `points_ledger.csv`            | Movimentações do saldo de pontos                          | movement_id, user_id, account_id, operation_code, points, movement_at, valid_until                                                                                                   |
-| `dim_operation.csv`            | Cadastro de tipos de movimentação                         | operation_code, operation_name, direction                                                                                                                                            |
-| `cards.csv`                    | Cadastros relacionados aos cartões                        | account_id, user_id, card_class, card_flag, created_at, is_most_recent                                                                                                               |
-| `redeemed_points.csv`          | Registros de movimentação de pontos associados às compras | order_item_id, account_id, movement_type, points                                                                                                                                     |
-| `crm_events.csv`               | Exportação da ferramenta de engajamento                   | event_ts, user_id, device_id, event_name, campaign_type, campaign_id, control_group, event_properties (JSON)                                                                         |
-| `relatorio_mensal_cliente.csv` | Relatório do operador ao banco                            | mes, aereas_pct, varejo_pct, pix_pct, pix_reais, pix_pontos, pix_transacoes, emails_enviados, push_enviados                                                                          |
+**Dúvidas e esclarecimentos recebidos do recrutador:** nenhum.
 
+## Orquestração: vale usar Airflow?
 
-O que o time de dados sabe e te conta:
+**Avaliação: não agora; sim quando houver ingestão recorrente.**
+- **Hoje:** os dados são uma extração única e o `build.py` é idempotente e roda em menos de 1 minuto. Airflow acrescentaria infraestrutura (scheduler, banco de metadados, workers) sem ganho para o avaliador.
+- **Em produção, com cargas diárias:** a DAG seria simples, porque o `build.py` já está separado em etapas:
 
-- O Pontua+ substituiu um programa anterior; os saldos antigos foram migrados para o sistema novo.
-- Os níveis de cartão, do mais simples ao mais alto: Essencial, Gold, Platinum, Platinum Elo, Infinite, Black.
-- A ferramenta de CRM e o sistema de pedidos são sistemas diferentes e não compartilham configuração.
-- Os dados foram extraídos em 01/10/2026.
+  `sensor de chegada dos arquivos → conferir manifesto/SHA → dbt source freshness → dbt build (seeds, run, test) → exportar Parquet + dicionário → publicar dashboard → alerta em falha`
 
+  Com `dbt build` falhando em qualquer teste, a publicação não acontece.
+- **Alternativas mais leves para o mesmo papel:** Dagster (assets que mapeiam 1:1 os modelos dbt) ou um agendamento de CI (GitHub Actions) rodando o `build.py`.
 
-## Registro do processo (obrigatório)
+## Tempo gasto
 
-**Commits e pushes.** Trabalhe na branch `entrega` e faça push ao fim de cada sessão de trabalho. O GitHub registra a hora de cada push no servidor. Ao terminar, abra um Pull Request de `entrega` para `main`: a abertura do PR marca a entrega.
+Cerca de **2h30** de trabalho, em 25/10/2026, das 13h30 às ~16h00, conforme os registros com horário em [AI_LOG.md](AI_LOG.md) e os commits.
 
-**Uso de IA em `AI_LOG.md`.**
-- Se usar um agente que lê `AGENTS.md` ou `CLAUDE.md` (Claude Code, Cursor, Codex, Copilot e similares), ele registra cada sessão automaticamente. Confira o que foi escrito.
-- Se usar IA em chat (ChatGPT, Claude.ai, Gemini etc.), ao fim de cada conversa cole o prompt abaixo e acrescente a resposta ao final de `AI_LOG.md`:
+## Uso de IA
 
-```
-Resuma esta conversa para um registro de uso de IA, em português, neste formato:
-### <data e hora> · <ferramenta e modelo>
-- **Pedido:** o que eu pedi, em 1 a 3 linhas.
-- **O que a IA fez ou sugeriu:** resumo factual.
-- **O que eu conferi, corrigi ou rejeitei:** inclusive erros seus que eu apontei.
-- **Arquivos criados ou alterados:** caminhos, se houver.
-Seja factual. Não invente nada que não esteja na conversa.
-```
+Tudo foi feito com **Claude Code (Claude Opus 5.5)** no VS Code, com o candidato aprovando cada decisão de estrutura e de regra de negócio antes da execução. O registro por sessão está em [AI_LOG.md](AI_LOG.md).
 
-Links de compartilhamento ou exportações das conversas (por exemplo, `/export` no Claude Code) são bem-vindos em `ai-log/`.
+**O que o candidato decidiu ou corrigiu:**
+- dbt + DuckDB, modelagem Kimball, o padrão das CTEs no staging e Streamlit;
+- a estrutura `entrega/` + `contexto/`;
+- o dashboard em 4 telas, com o agente na visão geral;
+- tratar regras de negócio como tabela de referência ("em produção não falamos em editar CSV");
+- pedir benchmark externo para o breakage;
+- o ajuste de layout dos big numbers.
+
+**O que a IA errou e foi corrigido** (com teste ou screenshot):
+- contagem de destinatários do CRM que incluía falhas de envio;
+- `coalesce` sobre hash que nunca retornava `-1`;
+- SHA-256 quebrado pelo `autocrlf` do Git;
+- números escritos à mão no dashboard;
+- cor de modalidade usada em séries que não eram modalidade;
+- arredondamento diferente entre o dashboard e o deck;
+- waterfall com soma em ponto flutuante;
+- o agente travando sob 503/429 do Gemini.
+
+**Skills usadas:** `dataviz` (paleta e regras dos gráficos). O validador de paleta não rodou porque o Node não está instalado; foram usados os valores já validados da paleta de referência. **Pesquisa web:** benchmark de breakage (Multiplus, conferido no PDF do relatório anual) e SDK e modelos do Gemini.
+
+## Como seguiria
+
+- Validar as hipóteses com o negócio, em especial o preço por ponto e o denominador das metas, e reprocessar.
+- Breakage projetado por safra para o programa novo.
+- Teste A/B da nova taxa do Pix com grupo de controle.
+- Testes de regressão do agente com um conjunto fixo de perguntas e respostas esperadas.

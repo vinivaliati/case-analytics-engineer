@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pontua+ · Diretoria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  Deck-modelo Brain003. Implementa os templates principais do SLIDES.md sobre os
+  tokens do design-v3.md. Imagens do brandbook vêm da URL pública do artifacts.brain3.com.br,
+  com cópia local em img/ (data-local) como reserva; Minu e Core só existem em img/.
+  GSAP e anime.js em lib/. Para um arquivo único com tudo embutido: scripts/embed_deck.py.
+
+  Como usar como base de um deck novo:
+  - Copie a pasta deck-template/ inteira (deck.html + img/ + lib/).
+  - Duplique um <section class="slide"> do template desejado e troque o conteúdo.
+  - Imagem nova do brandbook: src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/…"
+    + data-local="img/…" com a cópia local.
+  - data-section: nome da seção no rodapé. data-tagline: adiciona a tagline vertical.
+    class="slide light" + <div class="float">: slide claro flutuante.
+  - data-anim no elemento: up | scale | cinematic | featured | seq | row | bars | count | draw | hl | panel | lift
+    (lift aceita data-x / data-y com o deslocamento de entrada em px). data-type="a|b|c": palavra que troca.
+  - data-at="0.4" força o início (s) na timeline do slide; sem ele, cada elemento entra logo após o anterior.
+  - Waterfall: <div class="wf" data-waterfall='[["Base",100,"total"],["Item",20],…,["Total",120,"total"]]'>
+    A geometria sai da regra de ancoragem do SLIDES.md, e o slide recusa dados que não somam.
+  - Voz: <body data-voice="comercial"> (tudo em Roboto Mono) ou "produto" (corpo em Inter).
+  - Navegação: → / espaço / clique avançam, ← volta, F tela cheia, #N na URL abre o slide N.
+  - ?static na URL: sem animação (conferir layout, exportar PDF). Ex.: index.html?static#5
+-->
+<script>
+  /* Imagens vêm do brandbook publicado (artifacts.brain3.com.br). Se a URL falhar
+     (offline, compartilhamento desligado), cai para a cópia local em data-local. */
+  document.addEventListener('error', function(e){
+    var t = e.target;
+    if(t && t.tagName === 'IMG' && t.dataset.local && !t.dataset.fellBack){
+      t.dataset.fellBack = '1'; t.src = t.dataset.local;
+    }
+  }, true);
+</script>
+<style>
+  :root{
+    --primary:#1E2BFF; --secondary:#2438E6; --accent-data:#00CFFF; --accent-synapse:#3DFF6E;
+    --n900:#060A1C; --n800:#0E142F; --n700:#161D40;
+    --surface-card:#FFFFFF; --surface-float:#E4E9F7; --ink:#0C1230; --on-light-low:#5A6384;
+    --hi:#EAF0FF; --mid:#A9B4D0; --low:#6B7699;
+    --success:#3DFF6E; --error:#FF6E86;
+    --stroke:rgba(255,255,255,0.12);
+    --mx:115px; --my:65px;
+    --mono:'Roboto Mono', monospace; --sans:'Inter', sans-serif;
+    --body-font:var(--mono);            /* voz comercial; data-voice="produto" troca para Inter */
+  }
+  body[data-voice="produto"]{ --body-font:var(--sans); }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; background:#000; overflow:hidden; }
+  body{ font-family:var(--mono); color:var(--hi); -webkit-font-smoothing:antialiased; }
+  img,video{ display:block; max-width:100%; }
+
+  /* ---------- palco 1920×1080 escalado para a janela ---------- */
+  /* palco no centro exato: absolute + translate. (Com grid/flex, numa tela menor que
+     1920px a trilha cresce para caber o deck e a escala acontece em torno do centro errado.) */
+  .viewport{ position:fixed; inset:0; overflow:hidden; }
+  .deck{ position:absolute; left:50%; top:50%; width:1920px; height:1080px;
+    transform:translate(-50%,-50%); transform-origin:center center; }
+  .slide{
+    position:absolute; inset:0; overflow:hidden; background:var(--n900);
+    opacity:0; visibility:hidden; transition:opacity .5s ease, visibility 0s linear .5s;
+  }
+  .slide.current{ opacity:1; visibility:visible; transition:opacity .5s ease; }
+  .pad{ position:absolute; inset:var(--my) var(--mx); }
+
+  /* ---------- moldura: wordmark, tagline vertical, rodapé, progresso ---------- */
+  .wordmark{ position:absolute; top:var(--my); left:var(--mx); height:36px; width:auto; z-index:3; }
+  .vtag{
+    position:absolute; right:38px; top:50%; transform:translate(50%,-50%) rotate(90deg);
+    font-size:16px; letter-spacing:.18em; text-transform:uppercase; color:var(--low); white-space:nowrap; z-index:3;
+  }
+  .foot{
+    position:absolute; left:var(--mx); right:var(--mx); bottom:28px; display:flex; justify-content:space-between;
+    font-size:16px; color:var(--low); letter-spacing:.04em; z-index:3;
+  }
+  .progress{ position:fixed; left:0; right:0; bottom:0; display:flex; gap:3px; height:3px; z-index:20; }
+  .progress i{ flex:1; background:rgba(255,255,255,.14); transition:background-color .2s; }
+  .progress i.on{ background:var(--accent-data); }
+  .hint{ position:fixed; right:14px; bottom:10px; font:12px var(--mono); color:#6B7699; z-index:21; transition:opacity .6s; }
+  .hint.gone, .static .hint{ opacity:0; }
+  .static .slide, .static .slide.current{ transition:none; }
+
+  /* ---------- tipografia de palco (typography-slide) ---------- */
+  .overline{ font-size:20px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-data); }
+  .t-cover{ font-size:132px; font-weight:700; line-height:1.08; letter-spacing:-.03em; }
+  .t-divider{ font-size:104px; font-weight:700; line-height:1.05; letter-spacing:-.03em; }
+  .t-kicker{ font-size:40px; font-weight:700; }
+  .t-title{ font-size:64px; font-weight:700; line-height:1.18; letter-spacing:-.01em; text-wrap:balance; }
+  .t-sub{ font-size:36px; font-weight:500; line-height:1.25; }
+  .t-body{ font-family:var(--body-font); font-size:26px; line-height:1.55; color:var(--mid); }
+  .t-body-sm{ font-family:var(--body-font); font-size:21px; line-height:1.55; color:var(--mid); }
+  .t-label{ font-size:20px; }
+  .t-caption{ font-size:16px; color:var(--low); }
+  .t-data-xl{ font-size:220px; font-weight:700; line-height:.9; letter-spacing:-.04em; }
+  .t-data-lg{ font-size:72px; font-weight:700; line-height:1; letter-spacing:-.02em; }
+  .unit{ font-size:.4em; letter-spacing:0; }
+  .head{ display:flex; flex-direction:column; gap:24px; max-width:1300px; }
+
+  /* grifo (text-highlight): o retângulo cresce por trás do texto */
+  .hl{ position:relative; color:#fff; padding:0 .12em; z-index:0; white-space:nowrap; }
+  .hl::before{ content:""; position:absolute; inset:.08em 0 -.04em; background:var(--primary); z-index:-1;
+    transform-origin:left center; transform:scaleX(var(--hl,1)); }
+  .hl-invert{ display:inline-flex; align-items:baseline; background:#fff; color:var(--secondary); padding:0 .14em .04em; line-height:1; }
+  .caret{ color:var(--secondary); font-weight:400; animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ---------- componentes ---------- */
+  .card{ background:var(--n800); border:1px solid var(--stroke); padding:40px;
+    transition:transform .3s ease, border-color .3s ease; }
+  .card:hover{ transform:translateY(-4px); border-color:var(--primary); }
+  .card h3{ font-size:30px; font-weight:700; color:var(--hi); margin:22px 0 16px; line-height:1.2; }
+  .picto{ width:56px; height:56px; filter:brightness(0) invert(1); }
+  .light .picto{ filter:none; }
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+  .joined{ display:grid; gap:1px; background:var(--stroke); border:1px solid var(--stroke); }
+  .highlight{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .highlight .overline{ color:#fff; font-weight:700; }
+  .highlight .t-body, .highlight .t-body-sm{ color:#fff; }
+
+  /* process-step + conector */
+  .flow{ grid-template-columns:repeat(3,1fr); }
+  .step{ position:relative; background:var(--n900); padding:48px 40px; }
+  .step-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:36px; }
+  .chip{ width:72px; height:72px; background:var(--primary); display:grid; place-items:center; }
+  .chip .picto{ width:44px; height:44px; }
+  .step .t-label{ color:var(--accent-data); }
+  .step h3{ font-size:34px; margin-bottom:20px; line-height:1.15; }
+  .conn{ position:absolute; top:50%; right:-23px; width:44px; height:44px; margin-top:-22px; z-index:2;
+    background:var(--n800); border:1px solid var(--stroke); border-radius:9999px; display:grid; place-items:center; }
+  .conn .pulse{ fill:var(--accent-synapse); animation:pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
+
+  /* synapse-link */
+  .syn{ position:relative; height:1px; background:var(--n700); flex:1; }
+  .syn i{ position:absolute; top:50%; left:0; width:10px; height:10px; margin-top:-5px; border-radius:9999px;
+    background:var(--accent-synapse); animation:flow 2.4s ease-in-out infinite; }
+  .syn.rev i{ animation-direction:reverse; }
+  @keyframes flow{ 0%{ left:0; opacity:0; } 15%,85%{ opacity:1; } 100%{ left:calc(100% - 10px); opacity:0; } }
+  .node{ border:1px solid var(--stroke); padding:28px 40px; display:grid; place-items:center; gap:12px; background:var(--n900); }
+  .node.core{ border-color:var(--accent-data); }
+
+  /* glass-card e media-frame */
+  .glass{ position:absolute; background:rgba(6,10,28,.78); backdrop-filter:blur(6px); padding:36px 40px; width:560px; z-index:2; }
+  .glass .t-label{ color:var(--accent-data); font-weight:600; margin-bottom:14px; display:block; }
+  .glass.cyan{ border:1px solid rgba(0,207,255,.55); }
+  .glass.blue{ border:1px solid rgba(30,43,255,.85); text-align:right; }
+  .frame{ aspect-ratio:4/5; overflow:hidden; border:1px solid var(--stroke); background:var(--n700); }
+  .frame img{ width:100%; height:100%; object-fit:cover; }
+
+  /* kpi-tile / charts */
+  .kpis{ grid-template-columns:repeat(3,1fr); background:rgba(255,255,255,.14); border:0; }
+  .kpi{ background:var(--secondary); padding:40px; color:#fff; }
+  .kpi .overline{ color:rgba(255,255,255,.75); }
+  .kpi .t-body-sm{ color:rgba(255,255,255,.85); margin-top:10px; }
+  .chart{ position:relative; display:flex; align-items:flex-end; gap:0; border-bottom:1px solid var(--n700); }
+  .bar-slot{ flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; }
+  .bar{ width:64%; background:var(--primary); position:relative; }
+  .bar.focus{ background:var(--accent-data); }
+  .bar b{ position:absolute; bottom:100%; left:0; right:0; text-align:center; font-size:20px; padding-bottom:8px; color:var(--hi); font-weight:500; }
+  .cat{ position:absolute; top:100%; font-size:18px; color:var(--low); padding-top:12px; }
+  .bar-slot{ position:relative; }
+  .gridline{ position:absolute; left:0; right:0; height:1px; background:var(--n700); }
+
+  /* waterfall (ancorado por bottom) */
+  .wf{ position:relative; height:560px; border-bottom:1px solid var(--n700); }
+  .wf .col{ position:absolute; bottom:0; top:0; }
+  .wf .wbar{ position:absolute; left:18%; right:18%; }
+  .wf .wbar b{ position:absolute; left:0; right:0; text-align:center; font-size:22px; color:var(--hi); font-weight:500; }
+  .wf .up{ background:var(--success); } .wf .down{ background:var(--error); } .wf .total{ background:var(--primary); }
+  .wf .wlink{ position:absolute; height:0; border-top:1px dashed var(--n700); }
+  .wf .cat{ left:0; right:0; text-align:center; }
+
+  /* comparação + glyphs */
+  .cmp{ grid-template-columns:1.4fr repeat(3,1fr); }
+  .cmp > div{ background:var(--n900); padding:22px 28px; font-size:22px; display:flex; align-items:center; }
+  .cmp .hd{ background:var(--n800); font-weight:700; font-size:24px; }
+  .cmp .hd.brain{ background:var(--primary); color:#fff; }
+  .cmp .brain{ background:rgba(30,43,255,.16); justify-content:center; }
+  .cmp .c{ justify-content:center; }
+  .glyph{ width:30px; height:30px; }
+
+  /* 2×2 */
+  .quad{ position:relative; width:900px; height:720px; display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--n700); border:1px solid var(--n700); }
+  .quad > div{ background:var(--n900); padding:28px; }
+  .quad > div.target{ background:var(--n800); }
+  .qtag{ display:inline-block; background:var(--primary); color:#fff; font-size:20px; padding:8px 14px; margin:8px 8px 0 0; }
+  .axis{ position:absolute; font-size:18px; color:var(--low); letter-spacing:.08em; text-transform:uppercase; }
+
+  /* timeline */
+  .tl{ position:relative; height:280px; }
+  .tl .line{ position:absolute; left:0; right:0; top:60px; height:2px; background:var(--n700); }
+  .tl .line.future{ background:repeating-linear-gradient(90deg,var(--n700) 0 14px,transparent 14px 26px); }
+  .tl .ms{ position:absolute; top:52px; width:360px; }
+  .tl .dot{ width:18px; height:18px; border-radius:9999px; background:var(--primary); }
+  .tl .dot.now{ background:var(--accent-synapse); }
+  .tl .ms .t-label{ color:var(--accent-data); margin:26px 0 10px; }
+  .tl .ms h3{ font-size:30px; margin-bottom:10px; }
+
+  /* carrossel + modal */
+  .rail{ display:flex; gap:24px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding-bottom:4px; scrollbar-width:none; }
+  .rail::-webkit-scrollbar{ display:none; }
+  .ccard{ flex:0 0 440px; scroll-snap-align:start; min-height:380px; display:flex; flex-direction:column; }
+  .ccard .t-body-sm{ flex:1; }
+  .plus, .chev{ width:56px; height:56px; border:1px solid var(--n700); background:transparent; color:var(--hi);
+    font:400 30px var(--mono); cursor:pointer; display:grid; place-items:center; transition:background-color .3s, border-color .3s; }
+  .plus:hover, .chev:hover{ background:var(--primary); border-color:var(--primary); }
+  .chev:disabled{ opacity:.3; pointer-events:none; }
+  .plus{ align-self:flex-end; margin-top:24px; }
+  .modal{ position:absolute; inset:0; z-index:10; display:none; place-items:center; background:rgba(6,10,28,.72); backdrop-filter:blur(4px); opacity:0; }
+  .modal-card{ width:980px; background:var(--n800); border:1px solid var(--n700); padding:64px; position:relative; }
+  .modal-card h3{ font-size:48px; margin:18px 0 24px; line-height:1.15; }
+  .modal-close{ position:absolute; top:22px; right:22px; }
+
+  /* slide claro flutuante */
+  .slide.light{ background:var(--n900); }
+  .float{ position:absolute; inset:40px; background:var(--surface-float); color:var(--ink);
+    --hi:var(--primary); --mid:var(--ink); --low:var(--on-light-low); --stroke:rgba(12,18,48,.14); }
+  .float .overline{ color:var(--primary); }
+  .float .t-title{ color:var(--primary); }
+  .float .highlight .overline{ color:#fff; }
+
+  /* split branco × navy */
+  .split{ position:absolute; inset:0; display:grid; grid-template-columns:55% 45%; }
+  .split .white{ background:var(--surface-card); color:var(--ink); padding:var(--my) 96px var(--my) var(--mx);
+    display:flex; flex-direction:column; justify-content:center; gap:32px;
+    --hi:var(--primary); --mid:var(--ink); --low:var(--on-light-low); }
+  .split .white .overline, .split .white .t-title{ color:var(--primary); }
+  .split .art{ position:relative; background:var(--n900); }
+  .split .art img{ width:100%; height:100%; object-fit:cover; }
+
+  /* cta */
+  .cta{ background:var(--primary); padding:44px 56px; display:flex; justify-content:space-between; align-items:center; gap:40px; }
+  .btn-white{ background:#fff; color:var(--ink); font:500 24px var(--mono); padding:22px 36px; white-space:nowrap; border:0; }
+
+  .fullbleed{ position:absolute; inset:0; }
+  .fullbleed img{ width:100%; height:100%; object-fit:cover; }
+  .scrim{ position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,10,28,.92) 0%, rgba(6,10,28,.55) 45%, rgba(6,10,28,0) 75%); }
+  .scrim-bottom{ position:absolute; inset:0; background:linear-gradient(0deg, rgba(6,10,28,.85) 0%, rgba(6,10,28,0) 35%); }
+
+  @media (prefers-reduced-motion:reduce){
+    .conn .pulse, .syn i, .caret{ animation:none; }
+    .syn i{ opacity:0; }
+    .slide, .slide.current{ transition:none; }
+  }
+</style>
+</head>
+<body data-voice="comercial">
+<div class="viewport">
+<div class="deck" id="deck">
+
+<!-- 01 · Capa -->
+<section class="slide" data-section="Capa" data-template="capa-manifesto" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:44px;">
+    <span class="overline" data-anim="up">Pontua+ · Diretoria · out/2026</span>
+    <h1 class="t-cover" data-anim="up">O Pix <span class="hl-invert">somou volume</span><br>e cobrou a conta</h1>
+    <p class="t-body" style="max-width:1250px" data-anim="up">O que aconteceu com os resgates depois do Pontos no Pix, o que é verdade nas três afirmações e o que recomendamos decidir na próxima semana.</p>
+  </div>
+</section>
+
+<!-- 02 · Sumário -->
+<section class="slide" data-section="Sumário" data-template="sumario-executivo" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:64px;">
+    <div class="head" style="max-width:1600px">
+      <span class="overline" data-anim="up">Sumário executivo</span>
+      <h2 class="t-title" data-anim="up">O Pix não roubou resgates: <span class="hl" data-anim="hl">criou um resgate novo e caro.</span></h2>
+    </div>
+    <div class="grid-3">
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">O que aconteceu</span><h3>Varejo em 12,9%, meta 20%</h3><p class="t-body-sm">Os pontos resgatados foram de 18,9 para 31,0 mi/mês. Aéreas e varejo não caíram; o Pix entrou no denominador e diluiu os percentuais. Aéreas segue em 59,1%.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">As 3 afirmações</span><h3>Nenhuma se sustenta</h3><p class="t-body-sm">O Pix custa R$ 0,019, não R$ 0,016. Breakage é 0% no programa novo e 19,8% no migrado, não 40%. Quem não recebeu comunicação adotou o Pix na mesma taxa.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">Recomendação</span><h3>Coibir com calibragem</h3><p class="t-body-sm">O Pix é a modalidade mais cara (R$ 0,019/ponto) e não ajuda nenhuma meta. Calibrar taxa e teto, renegociar o denominador das metas e corrigir o relatório do operador.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 · Capítulo -->
+<section class="slide" data-section="O que aconteceu" data-template="capitulo" style="background:var(--primary)">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:20px;" data-anim="cinematic">
+    <span class="t-kicker">Capítulo 1:</span>
+    <h2 class="t-divider">O que aconteceu<br>com os resgates</h2>
+  </div>
+  <div class="vtag" style="color:rgba(255,255,255,.6)">Sinapses conectadas, negócios expandidos</div>
+</section>
+
+<!-- 04 · Placar -->
+<section class="slide" data-section="O que aconteceu" data-template="dashboard" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:48px; padding-top:110px;">
+    <div class="head"><span class="overline" data-anim="up">Metas contratuais · set/2026</span><h2 class="t-title" data-anim="up">Aéreas cumpre. Varejo está abaixo da meta desde junho.</h2></div>
+    <div class="joined kpis">
+      <div class="kpi" data-anim="up"><span class="overline">Aéreas (meta ≥ 50%)</span><div class="t-data-lg" style="margin-top:14px">59,1%</div><p class="t-body-sm">cumprida em 12 de 12 meses</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Varejo (meta ≥ 20%)</span><div class="t-data-lg" style="margin-top:14px">12,9%</div><p class="t-body-sm">sem o Pix no denominador: 17,9%</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Pix</span><div class="t-data-lg" style="margin-top:14px">28,1%</div><p class="t-body-sm">dos pontos resgatados no mês</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:80px; align-items:end; padding-bottom:40px;">
+      <div class="chart" style="height:300px"><div class="gridline" style="bottom:66.7%; border-top:2px dashed var(--accent-data)"></div><div class="bar-slot"><div class="bar" data-anim="bars" style="height:67.0%"><b>20,1%</b></div><span class="cat">fev/26</span></div><div class="bar-slot"><div class="bar" data-anim="bars" style="height:71.1%"><b>21,3%</b></div><span class="cat">mar/26</span></div><div class="bar-slot"><div class="bar focus" data-anim="bars" style="height:63.9%"><b>19,2%</b></div><span class="cat">abr/26</span></div><div class="bar-slot"><div class="bar" data-anim="bars" style="height:67.3%"><b>20,2%</b></div><span class="cat">mai/26</span></div><div class="bar-slot"><div class="bar focus" data-anim="bars" style="height:44.1%"><b>13,2%</b></div><span class="cat">jun/26</span></div><div class="bar-slot"><div class="bar focus" data-anim="bars" style="height:42.1%"><b>12,6%</b></div><span class="cat">jul/26</span></div><div class="bar-slot"><div class="bar focus" data-anim="bars" style="height:40.4%"><b>12,1%</b></div><span class="cat">ago/26</span></div><div class="bar-slot"><div class="bar focus" data-anim="bars" style="height:42.8%"><b>12,9%</b></div><span class="cat">set/26</span></div></div>
+      <div data-anim="up"><p class="t-body-sm">% de varejo por mês. Em <span style="color:var(--accent-data)">ciano</span>, os meses abaixo da linha de 20%. A visão estrita (só produto, sem transferências e agência de viagens) nunca passou de 14,2%: a meta depende de como o contrato classifica essas modalidades.</p><p class="t-caption" data-anim="up">Fonte: mart_goal_attainment_monthly (visão contrato = definição do operador, reproduzida com até 1,5 p.p.)</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · Waterfall -->
+<section class="slide" data-section="O que aconteceu" data-template="waterfall" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:grid; grid-template-columns:1fr 2fr; gap:100px; align-items:center;">
+    <div class="head">
+      <span class="overline" data-anim="up">Pontos resgatados por mês (mil)</span>
+      <h2 class="t-title" data-anim="up">O Pix <span class="hl" data-anim="hl">somou</span>, quase não substituiu</h2>
+      <p class="t-body-sm" data-anim="up">Média mensal antes (fev a 26/mai/2026) e depois do Pix (27/mai a set/2026). Aéreas e varejo cresceram em pontos. Só a transferência a parceiros encolheu: quem queria "converter" pontos agora recebe dinheiro.</p>
+      <p class="t-caption" data-anim="up">Fonte: mart_redemption_economics (resgates efetivos, líquidos de devoluções; valores arredondados)</p>
+    </div>
+    <div class="wf" data-waterfall='[["Antes do Pix", 18910, "total"], ["Aéreas", 2909], ["Varejo", 172], ["Agência", 444], ["Transferência", -574], ["Pix", 9091], ["Depois do Pix", 30952, "total"]]'></div>
+  </div>
+</section>
+
+<!-- 06 · 12/01 -->
+<section class="slide" data-section="O que aconteceu" data-template="big-number" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:36px;">
+    <span class="overline" data-anim="up">Ponto de atenção · 12/01/2026</span>
+    <div class="t-data-xl"><span data-anim="count" data-to="76">76</span><span class="unit"> mi pontos em um dia</span></div>
+    <p class="t-sub" style="max-width:1500px; color:var(--mid)" data-anim="up">1.517 resgates aéreos num só dia, espalhados igualmente nas 24h, de clientes com saldo migrado e <span class="hl" data-anim="hl">sem campanha no CRM.</span></p>
+    <p class="t-body-sm" style="max-width:1500px" data-anim="up">Leva aéreas a 96,8% em jan/2026 (77,5% sem o dia). Hipótese principal: promoção de passagens não registrada no CRM; alternativa: carga em lote do programa anterior. <b style="color:var(--hi)">Precisa ser validado com a área de negócio.</b> Por isso a linha de base "antes do Pix" é fev-mai/2026.</p>
+    <p class="t-caption" data-anim="up">Fonte: dim_date.is_atypical_day (tabela de referência calendar_events); mart_goal_attainment_monthly</p>
+  </div>
+</section>
+
+<!-- 07 · Capítulo -->
+<section class="slide" data-section="As três afirmações" data-template="capitulo" style="background:var(--primary)">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:20px;" data-anim="cinematic">
+    <span class="t-kicker">Capítulo 2:</span>
+    <h2 class="t-divider">As três<br>afirmações</h2>
+  </div>
+  <div class="vtag" style="color:rgba(255,255,255,.6)">Sinapses conectadas, negócios expandidos</div>
+</section>
+
+<!-- 08 · CRM -->
+<section class="slide" data-section="As três afirmações" data-template="dashboard" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:48px; padding-top:110px;">
+    <div class="head"><span class="overline" data-anim="up">CRM: "a comunicação de lançamento explica o sucesso do Pix"</span><h2 class="t-title" data-anim="up">Não se sustenta: <span class="hl" data-anim="hl">sem comunicação, a adoção foi a mesma.</span></h2></div>
+    <div class="joined kpis">
+      <div class="kpi" data-anim="up"><span class="overline">Recebeu o e-mail</span><div class="t-data-lg" style="margin-top:14px">17,9%</div><p class="t-body-sm">adotou o Pix</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Nenhuma comunicação</span><div class="t-data-lg" style="margin-top:14px">18,1%</div><p class="t-body-sm">adotou o Pix</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Usou até 7 dias após o e-mail</span><div class="t-data-lg" style="margin-top:14px">6,8%</div><p class="t-body-sm">71% só depois de 30 dias</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
+      <p class="t-body-sm" data-anim="up">Quem clicou no e-mail adotou 15,5%. O primeiro Pix (27/05, 09:15) é anterior ao primeiro envio (28/05, 10:00), e o link do e-mail levava ao catálogo, não ao Pix. O produto em si (dinheiro na conta) explica melhor a adoção.</p>
+      <div data-anim="up"><p class="t-body-sm"><b style="color:var(--hi)">O que falta saber:</b> o export do CRM não tem grupo de controle (100% vazio), então isto é descritivo, não causal. Próxima campanha: teste A/B com grupo de controle.</p><p class="t-caption" data-anim="up">Fonte: mart_crm_pix_launch_adoption, mart_crm_pix_launch_timing (CRM convertido de UTC)</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 · Operador -->
+<section class="slide" data-section="As três afirmações" data-template="dashboard" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:48px; padding-top:110px;">
+    <div class="head"><span class="overline" data-anim="up">Operador: "o Pix sai a cerca de R$ 0,016 por ponto"</span><h2 class="t-title" data-anim="up">Falso: o Pix custa <span class="hl" data-anim="hl">R$ 0,0190</span> em todos os meses.</h2></div>
+    <div class="joined kpis">
+      <div class="kpi" data-anim="up"><span class="overline">Custo real</span><div class="t-data-lg" style="margin-top:14px">R$ 0,0190</div><p class="t-body-sm">R$ creditados ÷ pontos pagos</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Relatório do operador</span><div class="t-data-lg" style="margin-top:14px">R$ 0,0161</div><p class="t-body-sm">R$ pagos ÷ pontos de todos os pedidos</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Pontos sem pagamento</span><div class="t-data-lg" style="margin-top:14px">14,7%</div><p class="t-body-sm">cancelados, inválidos, estornados</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
+      <p class="t-body-sm" data-anim="up">O relatório divide os reais efetivamente pagos pelos pontos de todos os pedidos Pix, inclusive os que nunca foram pagos. As transações e os pontos do relatório batem exatamente com essa base (teste automatizado). É erro de base, não custo menor.</p>
+      <div data-anim="up"><p class="t-body-sm"><b style="color:var(--hi)">O que falta saber:</b> os reais do operador ficam 0,2% a 0,7% abaixo dos pagos e nenhuma regra testada explica. Pedir ao operador a regra do relatório.</p><p class="t-caption" data-anim="up">Fonte: mart_pix_reconciliation_monthly</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Breakage -->
+<section class="slide" data-section="As três afirmações" data-template="dashboard" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:48px; padding-top:110px;">
+    <div class="head"><span class="overline" data-anim="up">Diretor: "nosso breakage está em 40%; a meta é não passar de 20%"</span><h2 class="t-title" data-anim="up">Não é 40%. Mas o migrado <span class="hl" data-anim="hl">passa de 20% em outubro.</span></h2></div>
+    <div class="joined kpis">
+      <div class="kpi" data-anim="up"><span class="overline">Breakage do programa novo</span><div class="t-data-lg" style="margin-top:14px">0%</div><p class="t-body-sm">nada venceu: validade de 24 meses</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Breakage do saldo migrado</span><div class="t-data-lg" style="margin-top:14px">19,8%</div><p class="t-body-sm">+2,2 p.p. por mês</p></div>
+      <div class="kpi" data-anim="up"><span class="overline">Expiração ÷ resgate</span><div class="t-data-lg" style="margin-top:14px">36 a 44%</div><p class="t-body-sm">fev-abr/2026: provável origem do 40%</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
+      <p class="t-body-sm" data-anim="up">Breakage, pela definição de mercado (IFRS 15), é expirado ÷ emitido por safra. A Multiplus operou entre 21% e 24% (2010-2012). A razão "expiração do mês ÷ resgate do mês" não é breakage e cai com o Pix só porque o resgate cresceu.</p>
+      <div data-anim="up"><p class="t-body-sm"><b style="color:var(--hi)">O que falta saber:</b> o saldo migrado tem validade até 2028, mas expira ~7 mi pontos/mês desde jan/2026. Qual regra vale? E qual definição a diretoria usou?</p><p class="t-caption" data-anim="up">Fonte: mart_points_flow_monthly; benchmark em entrega/docs/benchmark_breakage.md</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · Saúde financeira -->
+<section class="slide" data-section="Saúde financeira" data-template="dashboard" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:grid; grid-template-columns:1fr 1.3fr; gap:100px; align-items:center;">
+    <div class="head">
+      <span class="overline" data-anim="up">Custo do programa por ponto resgatado</span>
+      <h2 class="t-title" data-anim="up">O Pix é a <span class="hl" data-anim="hl">modalidade mais cara</span></h2>
+      <p class="t-body-sm" data-anim="up">O enunciado diz que aéreas já custam mais do que o banco paga por ponto. Logo, cada ponto em Pix dá pelo menos R$ 0,0040 a mais de prejuízo que um ponto em aéreas: ~R$ 36 mil/mês sobre ~R$ 178 mil pagos em dinheiro. E o Pix reduz o breakage futuro, que é margem pura.</p>
+      <p class="t-body-sm" data-anim="up"><b style="color:var(--hi)">Hipótese declarada:</b> custo ≈ valor do produto − dinheiro pago pelo cliente. Varejo de parceiros do grupo custa menos que o valor de prateleira. Falta o preço por ponto do contrato com o banco.</p>
+      <p class="t-caption" data-anim="up">Fonte: mart_redemption_economics (depois do Pix)</p>
+    </div>
+    <div data-anim="up"><div class="chart" style="height:330px"><div class="bar-slot"><div class="bar" data-anim="bars" style="height:54.3%"><b>R$ 0,0125</b></div><span class="cat">Transferência</span></div><div class="bar-slot"><div class="bar" data-anim="bars" style="height:60.9%"><b>R$ 0,0140</b></div><span class="cat">Varejo</span></div><div class="bar-slot"><div class="bar" data-anim="bars" style="height:65.2%"><b>R$ 0,0150</b></div><span class="cat">Aéreas</span></div><div class="bar-slot"><div class="bar focus" data-anim="bars" style="height:82.6%"><b>R$ 0,0190</b></div><span class="cat">Pix</span></div></div></div>
+  </div>
+</section>
+
+<!-- 12 · Recomendação -->
+<section class="slide" data-section="Recomendação" data-template="sumario-executivo" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:28px; padding-top:120px;">
+    <div class="head"><span class="overline" data-anim="up">Recomendação</span><h2 class="t-title" data-anim="up">Coibir o Pix com calibragem, não eliminar</h2></div>
+    <div class="grid-3" style="grid-template-columns:repeat(3,1fr)">
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">1 · Calibrar o Pix</span><h3>Taxa menor ou teto mensal</h3><p class="t-body-sm">Número: R$ 0,019/ponto, o maior custo, 28% dos pontos. Falta: preço do banco por ponto e elasticidade da taxa.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">2 · Renegociar a meta</span><h3>Pix fora do denominador</h3><p class="t-body-sm">Número: sem o Pix, varejo 17,9% e aéreas 82,1%. Falta: como o contrato classifica Pix, transferências e agência.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">3 · Corrigir o relatório</span><h3>Base única no operador</h3><p class="t-body-sm">Número: 14,7% dos pontos Pix do relatório não foram pagos. Falta: a regra de R$ do operador.</p></div>
+    </div>
+    <div class="grid-3" style="grid-template-columns:repeat(2,1fr)">
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">4 · Padronizar o breakage</span><h3>Expirado ÷ emitido, por safra</h3><p class="t-body-sm">Número: migrado em 19,8%, subindo 2,2 p.p./mês. Falta: a regra de expiração do saldo migrado.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">5 · Medir antes de atribuir</span><h3>Grupo de controle no CRM</h3><p class="t-body-sm">Número: 18,1% de adoção sem nenhuma comunicação. Falta: teste A/B e explicação para 12/01.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · Próximos passos -->
+<section class="slide" data-section="Próximos passos" data-template="roadmap" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:90px;">
+    <div class="head"><span class="overline" data-anim="up">Próximos passos</span><h2 class="t-title" data-anim="up">Decidir agora, medir em 30 dias</h2></div>
+    <div class="tl">
+      <div class="line" style="right:42%" data-anim="draw"></div>
+      <div class="line future" style="left:58%" data-anim="draw"></div>
+      <div class="ms" style="left:0" data-anim="seq"><div class="dot now"></div><p class="t-label">Semana que vem</p><h3>Decisão do board</h3><p class="t-body-sm">Calibragem do Pix e pauta de renegociação das metas com o banco.</p></div>
+      <div class="ms" style="left:34%" data-anim="seq"><div class="dot"></div><p class="t-label">30 dias</p><h3>Respostas do negócio</h3><p class="t-body-sm">Preço do banco por ponto, 12/01, regra do migrado e do relatório do operador.</p></div>
+      <div class="ms" style="left:70%" data-anim="seq"><div class="dot"></div><p class="t-label">60 dias</p><h3>Teste com controle</h3><p class="t-body-sm">Nova taxa do Pix em A/B; acompanhamento no dashboard.</p></div>
+    </div>
+    <p class="t-caption" data-anim="up">Acompanhamento: dashboard Pontua+ (4 telas + analista com IA) · trecho tracejado = futuro</p>
+  </div>
+</section>
+
+<!-- 14 · Fechamento -->
+<section class="slide" data-section="Decisão" data-template="fechamento" data-tagline>
+  <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:56px;">
+    <div class="head"><span class="overline" data-anim="up">Decisão</span><h2 class="t-title" data-anim="up">O que precisamos decidir</h2></div>
+    <div class="grid-3">
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">01</span><h3>Calibrar o Pix</h3><p class="t-body-sm">Taxa por ponto e/ou teto mensal, com teste A/B.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">02</span><h3>Pauta com o banco</h3><p class="t-body-sm">Denominador das metas e classificação de transferências e agência.</p></div>
+      <div class="card" data-anim="up"><span class="t-label" style="color:var(--accent-data)">03</span><h3>Dono das definições</h3><p class="t-body-sm">Breakage, resgate efetivo e relatório do operador com uma regra só.</p></div>
+    </div>
+    <div class="cta" data-anim="featured"><p class="t-sub" style="color:#fff">O Pix fica, mas com preço que o programa consegue pagar.</p></div>
+  </div>
+</section>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true"><div class="modal-card"><button class="plus modal-close" data-close aria-label="Fechar">×</button><span class="overline" data-slot="over"></span><h3 data-slot="title"></h3><p class="t-body" data-slot="body"></p></div></div><template id="modal-data"></template>
+</div>
+</div>
+<div class="progress" id="progress"></div>
+<div class="hint">← → navegar · F tela cheia</div>
+
+<script src="lib/gsap.min.js"></script>
+<script src="lib/anime.min.js"></script>
+<script>
+(function(){
+  var deck = document.getElementById('deck');
+  var slides = [].slice.call(deck.querySelectorAll('.slide'));
+  /* ?static (ou ?print): sem animação, tudo no estado final — para conferir layout e exportar PDF */
+  var staticMode = /[?&](static|print)\b/.test(location.search);
+  var reduce = staticMode || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if(staticMode) document.documentElement.classList.add('static');
+  var hasGsap = typeof gsap !== 'undefined';
+  if(hasGsap) gsap.defaults({ ease:'power2.out', duration:0.65 });
+
+  /* ---------- palco escalado ---------- */
+  /* mede a área visível de verdade (o .viewport fixo), não a janela: dentro de
+     iframes e visualizadores a janela e a área visível podem divergir */
+  var vp = document.querySelector('.viewport');
+  function fit(){
+    var w = vp.clientWidth || document.documentElement.clientWidth;
+    var h = vp.clientHeight || document.documentElement.clientHeight;
+    deck.style.transform = 'translate(-50%,-50%) scale(' + Math.min(w / 1920, h / 1080) + ')';
+  }
+  window.addEventListener('resize', fit);
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(vp);
+  fit();
+
+  /* ---------- moldura: tagline, rodapé, progresso (contados do DOM) ---------- */
+  var progress = document.getElementById('progress');
+  slides.forEach(function(sl, i){
+    if(sl.hasAttribute('data-tagline')){
+      var t = document.createElement('div'); t.className = 'vtag';
+      t.textContent = 'Sinapses conectadas, negócios expandidos'; sl.appendChild(t);
+    }
+    /* rodapé automático, exceto onde o slide já traz o seu (capas) ou não deve ter (capítulo, claro) */
+    if(!sl.querySelector('.foot') && !sl.classList.contains('light') && sl.dataset.template !== 'capitulo' && sl.dataset.template !== 'contato'){
+      var f = document.createElement('div'); f.className = 'foot';
+      f.innerHTML = '<span>' + (sl.dataset.section || '') + '</span><span>' + String(i + 1).padStart(2, '0') + '</span>';
+      sl.appendChild(f);
+    }
+    progress.appendChild(document.createElement('i'));
+  });
+  var ticks = [].slice.call(progress.children);
+
+  /* ---------- glyphs da comparação (SVG traço 2px) ---------- */
+  var CHECK = '<svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="#00CFFF" stroke-width="2.4" stroke-linecap="square"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+  var XG = '<svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="#6B7699" stroke-width="2.4" stroke-linecap="square"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  [].forEach.call(document.querySelectorAll('[data-g]'), function(c){ c.innerHTML = c.dataset.g === '1' ? CHECK : XG; });
+
+  /* ---------- waterfall: ancoragem indutiva (SLIDES.md › waterfall-buildup) ---------- */
+  [].forEach.call(document.querySelectorAll('[data-waterfall]'), function(wf){
+    var rows = JSON.parse(wf.dataset.waterfall);
+    var base = rows[0][1], total = rows[rows.length - 1][1], sum = base;
+    for(var k = 1; k < rows.length - 1; k++) sum += rows[k][1];
+    if(sum !== total){ wf.innerHTML = '<p class="t-body-sm" style="color:#FF6E86">Waterfall inválido: base + variações = ' + sum + ', total impresso = ' + total + '.</p>'; return; }
+    var max = 0, V = 0, geo = [];
+    rows.forEach(function(r, n){
+      var b, t;
+      if(n === 0){ b = 0; t = r[1]; V = t; }
+      else if(n === rows.length - 1){ b = 0; t = V; }
+      else if(r[1] >= 0){ b = V; t = b + r[1]; V = t; }
+      else { t = V; b = t + r[1]; V = b; }
+      geo.push([b, t]); max = Math.max(max, t);
+    });
+    var w = 100 / rows.length, H = 0.86; /* 14% de folga para o rótulo */
+    rows.forEach(function(r, n){
+      var col = document.createElement('div'); col.className = 'col';
+      col.style.left = (n * w) + '%'; col.style.width = w + '%';
+      var kind = r[2] === 'total' ? 'total' : (r[1] >= 0 ? 'up' : 'down');
+      var bar = document.createElement('div'); bar.className = 'wbar ' + kind;
+      bar.style.bottom = (geo[n][0] / max * H * 100) + '%';
+      bar.style.height = ((geo[n][1] - geo[n][0]) / max * H * 100) + '%';
+      bar.setAttribute('data-anim', kind === 'total' && n > 0 ? 'bars-total' : 'bars');
+      var lbl = document.createElement('b');
+      lbl.textContent = (kind === 'total' ? '' : (r[1] > 0 ? '+' : '')) + r[1];
+      lbl.style.bottom = '100%'; lbl.style.paddingBottom = '8px';
+      bar.appendChild(lbl); col.appendChild(bar);
+      var cat = document.createElement('span'); cat.className = 'cat'; cat.textContent = r[0]; col.appendChild(cat);
+      wf.appendChild(col);
+      if(n < rows.length - 1){
+        var anchor = (r[2] === 'total' || r[1] >= 0) ? geo[n][1] : geo[n][0];
+        var link = document.createElement('div'); link.className = 'wlink';
+        link.style.left = ((n + 0.82) * w) + '%'; link.style.width = (w * 0.36) + '%';
+        link.style.bottom = (anchor / max * H * 100) + '%';
+        link.setAttribute('data-anim', 'link');
+        wf.appendChild(link);
+      }
+    });
+  });
+
+  /* ---------- presets (SLIDES.md › Animation Principles) ---------- */
+  function countUp(el){
+    var to = parseFloat(el.dataset.to) || 0, obj = { v:0 };
+    if(reduce || typeof anime === 'undefined'){ el.textContent = to; return; }
+    anime({ targets:obj, v:to, duration:900, easing:'easeOutCubic', round:1,
+      update:function(){ el.textContent = obj.v.toLocaleString('pt-BR'); } });
+  }
+  var typing = null;
+  function typeWord(el){
+    var words = el.dataset.type.split('|'), w = 0, c = 0, del = false;
+    clearTimeout(typing);
+    if(reduce){ el.textContent = words[0]; return; }
+    (function tick(){
+      var cur = words[w];
+      if(!del){
+        el.textContent = cur.slice(0, ++c);
+        if(c >= cur.length){ del = true; typing = setTimeout(tick, 1400); return; }
+        typing = setTimeout(tick, 90);
+      } else {
+        el.textContent = cur.slice(0, --c);
+        if(c <= 0){ del = false; w = (w + 1) % words.length; typing = setTimeout(tick, 350); return; }
+        typing = setTimeout(tick, 45);
+      }
+    })();
+  }
+
+  var FROM = {
+    up:        { opacity:0, y:14 },
+    seq:       { opacity:0, x:20, duration:0.5 },
+    row:       { opacity:0, duration:0.25 },
+    scale:     { opacity:0, scale:0.96, duration:0.8 },
+    cinematic: { opacity:0, scale:0.96, duration:0.9 },
+    featured:  { opacity:0, y:14, scale:0.97, ease:'power3.out', duration:0.8 },
+    panel:     { opacity:0, y:40, duration:0.8 },
+    bars:      { scaleY:0, transformOrigin:'50% 100%', duration:0.6 },
+    'bars-total': { scaleY:0, transformOrigin:'50% 100%', duration:0.8 },
+    link:      { opacity:0, duration:0.15 },
+    draw:      { scaleX:0, transformOrigin:'0 50%', duration:0.8 }
+  };
+  var STEP = { row:0.04, seq:0.15, bars:0.15, 'bars-total':0.15, link:0.15 };
+
+  var timeline = null;
+  function play(slide){
+    if(timeline){ timeline.kill(); timeline = null; }
+    var els = [].slice.call(slide.querySelectorAll('[data-anim]'));
+    var typer = slide.querySelector('[data-type]');
+    if(typer) typeWord(typer);
+    if(!hasGsap || reduce){
+      els.forEach(function(el){
+        if(el.dataset.anim === 'count') countUp(el);
+        if(el.dataset.anim === 'hl') el.style.setProperty('--hl', 1);
+      });
+      if(hasGsap) gsap.set(els, { clearProps:'transform,opacity' });
+      return;
+    }
+    /* volta ao estado natural antes do from(): se a animação anterior deste slide foi
+       interrompida no meio, o from() animaria até a opacidade parcial e travaria ali */
+    gsap.set(els, { clearProps:'transform,opacity' });
+    var tl = gsap.timeline(), at = 0;
+    els.forEach(function(el){
+      var kind = el.dataset.anim;
+      if(el.dataset.at) at = parseFloat(el.dataset.at);
+      if(kind === 'count'){ tl.call(countUp, [el], at); return; }
+      if(kind === 'hl'){ tl.fromTo(el, { '--hl':0 }, { '--hl':1, duration:0.5, ease:'power2.out' }, at + 0.35); return; }
+      if(kind === 'lift'){
+        tl.from(el, { opacity:0, x:parseFloat(el.dataset.x) || 0, y:parseFloat(el.dataset.y) || 0, duration:0.8, ease:'power3.out' }, at);
+        at += 0.14; return;
+      }
+      tl.from(el, FROM[kind] || FROM.up, at);
+      at += STEP[kind] || 0.12;
+    });
+    timeline = tl;
+  }
+
+  /* ---------- navegação clique a clique ---------- */
+  var current = -1;
+  function go(n){
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    if(n === current) return;
+    closeModal(true);
+    if(current >= 0) slides[current].classList.remove('current');
+    current = n;
+    slides[n].classList.add('current');
+    ticks.forEach(function(t, i){ t.classList.toggle('on', i <= n); });
+    /* em sandbox (pré-visualização do Claude, iframes) mudar a URL é proibido: ignora */
+    try { history.replaceState(null, '', '#' + (n + 1)); } catch(err){}
+    play(slides[n]);
+  }
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && modalOpen){ closeModal(); return; }
+    if(modalOpen) return;
+    if(['ArrowRight','PageDown',' ','Enter'].indexOf(e.key) > -1){ e.preventDefault(); go(current + 1); }
+    if(['ArrowLeft','PageUp','Backspace'].indexOf(e.key) > -1){ e.preventDefault(); go(current - 1); }
+    if(e.key === 'Home') go(0);
+    if(e.key === 'End') go(slides.length - 1);
+    if(e.key === 'f' || e.key === 'F'){
+      try {
+        var req = !document.fullscreenElement && document.documentElement.requestFullscreen
+          ? document.documentElement.requestFullscreen() : (document.exitFullscreen && document.exitFullscreen());
+        if(req && req.catch) req.catch(function(){});
+      } catch(err){}
+    }
+  });
+  deck.addEventListener('click', function(e){
+    if(e.target.closest('button, a, .rail, .modal')) return;
+    var x = e.clientX / window.innerWidth;
+    go(current + (x < 0.25 ? -1 : 1));
+  });
+
+  /* ---------- carrossel: scroll nativo ---------- */
+  [].forEach.call(document.querySelectorAll('[data-rail]'), function(btn){
+    var rail = btn.closest('.slide').querySelector('.rail');
+    function sync(){
+      var btns = btn.closest('.slide').querySelectorAll('[data-rail]');
+      btns[0].disabled = rail.scrollLeft < 4;
+      btns[1].disabled = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
+    }
+    btn.addEventListener('click', function(){ rail.scrollBy({ left:parseInt(btn.dataset.rail, 10) * 464, behavior:'smooth' }); });
+    rail.addEventListener('scroll', sync, { passive:true }); sync();
+  });
+
+  /* ---------- modal: cresce do centro, véu com blur ---------- */
+  var modal = document.getElementById('modal'), modalOpen = false;
+  var data = document.getElementById('modal-data');
+  function openModal(id){
+    var src = data.content.querySelector('[data-id="' + id + '"]');
+    modal.querySelector('[data-slot="over"]').textContent = src.dataset.over;
+    modal.querySelector('[data-slot="title"]').textContent = src.dataset.title;
+    modal.querySelector('[data-slot="body"]').textContent = src.textContent;
+    modal.style.display = 'grid'; modal.setAttribute('aria-hidden', 'false'); modalOpen = true;
+    if(hasGsap && !reduce){
+      gsap.timeline()
+        .to(modal, { opacity:1, duration:0.35 }, 0)
+        .fromTo(modal.querySelector('.modal-card'), { opacity:0, scale:0.94, y:10 }, { opacity:1, scale:1, y:0, duration:0.35 }, 0);
+    } else { modal.style.opacity = 1; }
+    modal.querySelector('[data-close]').focus();
+  }
+  function closeModal(instant){
+    if(!modalOpen) return;
+    modalOpen = false; modal.setAttribute('aria-hidden', 'true');
+    function hide(){ modal.style.display = 'none'; modal.style.opacity = 0; }
+    if(instant || !hasGsap || reduce) return hide();
+    gsap.to(modal, { opacity:0, duration:0.3, ease:'power2.in', onComplete:hide });
+  }
+  [].forEach.call(document.querySelectorAll('[data-modal]'), function(b){
+    b.addEventListener('click', function(){ openModal(b.dataset.modal); });
+  });
+  modal.addEventListener('click', function(e){ if(e.target === modal || e.target.closest('[data-close]')) closeModal(); });
+
+  var hint = document.querySelector('.hint');
+  setTimeout(function(){ hint.classList.add('gone'); }, 4000);
+
+  /* ---------- início ---------- */
+  var start = 0;
+  try { start = parseInt((location.hash || '#1').slice(1), 10) - 1; } catch(err){}
+  go(isNaN(start) ? 0 : start);
+  window.brainDeck = { go:go, get current(){ return current; }, slides:slides };
+})();
+</script>
+</body>
+</html>

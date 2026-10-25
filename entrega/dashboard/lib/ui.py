@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import ROUND_HALF_UP, Decimal
+
 import pandas as pd
 import streamlit as st
 
@@ -20,8 +22,9 @@ def redemptions() -> pd.DataFrame:
 
 
 def br(value: float, decimals: int = 0) -> str:
-    """Número no padrão brasileiro."""
-    text = f"{value:,.{decimals}f}"
+    """Número no padrão brasileiro, com arredondamento comercial (12,85 -> 12,9), igual às apresentações."""
+    q = Decimal(str(value)).quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
+    text = f"{q:,.{decimals}f}"
     return text.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
