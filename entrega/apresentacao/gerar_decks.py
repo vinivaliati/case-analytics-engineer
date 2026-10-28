@@ -201,6 +201,36 @@ def meaning(text: str) -> str:
     return f'<p class="t-body-sm" data-anim="up" style="border-left:3px solid var(--accent-data); padding-left:18px"><b style="color:var(--hi)">O que significa:</b> {text}</p>'
 
 
+def layer_counts() -> dict[str, int]:
+    """Modelos por camada, lidos do manifest do dbt (para os slides técnicos)."""
+    m = json.loads((REPO / "entrega" / "dbt" / "target" / "manifest.json").read_text(encoding="utf-8"))
+    out: dict[str, int] = {}
+    for n in m["nodes"].values():
+        if n["resource_type"] == "model":
+            key = "/".join(n["fqn"][1:-1])
+            out[key] = out.get(key, 0) + 1
+            if key == "marts/core":
+                kind = "fct" if n["name"].startswith("fct_") else "dim"
+                out[kind] = out.get(kind, 0) + 1
+        elif n["resource_type"] == "seed":
+            out["seeds"] = out.get("seeds", 0) + 1
+    return out
+
+
+layers = layer_counts()
+
+
+def tech_strip(items: list[tuple[str, str]]) -> str:
+    """Faixa 'Como chegamos aqui': a parte técnica ao lado do achado de negócio (dados → regra → teste)."""
+    cells = "".join(
+        f'<div style="background:var(--n900); padding:14px 20px"><span class="t-label" style="color:var(--accent-data)">{label}</span>'
+        f'<p style="font-size:18px; line-height:1.4; color:var(--mid); margin-top:6px">{text}</p></div>' for label, text in items
+    )
+    return (f'<div data-anim="up" style="border:1px solid rgba(0,207,255,.45)">'
+            f'<div style="padding:10px 20px; font-size:15px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-data); background:var(--n800)">Como chegamos aqui · a parte técnica</div>'
+            f'<div class="joined" style="grid-template-columns:repeat({len(items)},1fr); border:0">{cells}</div></div>')
+
+
 # ---------------------------------------------------------------- deck da diretoria
 var_months = ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]
 var_bars = bars_html([(mlabel(m), g.loc[m, "varejo_pct"], f"{br(g.loc[m, 'varejo_pct'], 1)}%", g.loc[m, "varejo_pct"] < 20) for m in var_months], 250, ref=20, maxv=30)
@@ -279,7 +309,7 @@ board = f"""
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:44px;">
     <span class="overline" data-anim="up">Pontua+ · Diretoria · out/2026</span>
     <h1 class="t-cover" data-anim="up">O Pix <span class="hl-invert">somou volume</span><br>e cobrou a conta</h1>
-    <p class="t-body" style="max-width:1250px" data-anim="up">O que recebemos, o que construímos para responder com segurança, o que os dados mostram, o que ainda está em aberto e o que recomendamos decidir.</p>
+    <p class="t-body" style="max-width:1250px" data-anim="up">O que recebemos, o que construímos para responder com segurança, o que os dados mostram (e como chegamos em cada número), o que ainda está em aberto e o que recomendamos decidir.</p>
   </div>
 </section>
 
@@ -333,9 +363,9 @@ board = f"""
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:30px; padding-top:110px;">
     <div class="head" style="max-width:1600px"><span class="overline" data-anim="up">Do arquivo à decisão</span><h2 class="t-title" data-anim="up" style="font-size:54px">Um comando reconstrói tudo: <span class="hl" data-anim="hl">qualquer número aqui é rastreável</span></h2></div>
     <div class="joined flow">
-      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">01 / confere</span></div><h3>Os arquivos são os do case</h3><p class="t-body-sm">Impressão digital (SHA-256) e contagem dos 9 arquivos conferidas antes de tudo. Para o negócio: ninguém trabalha com uma versão diferente dos dados.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
-      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / modela</span></div><h3>Regras explícitas e testadas</h3><p class="t-body-sm">dbt + DuckDB, modelo Kimball (fatos e dimensões). Para o negócio: cada regra (o que é resgate, o que é varejo) está escrita e pode ser revista.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
-      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">03 / publica</span></div><h3>Uma base, três usos</h3><p class="t-body-sm">{n_tables} tabelas agregadas (sem dado de cliente) com dicionário. Dashboard, agente de IA e estes slides leem a mesma base: os números são sempre os mesmos.</p></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">01 / confere</span></div><h3>Os arquivos são os do case</h3><p class="t-body-sm"><code>build.py</code> confere impressão digital (SHA-256) e contagem dos 9 arquivos. Para o negócio: todos usam a mesma versão dos dados.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / modela</span></div><h3>Regras explícitas e testadas</h3><p class="t-body-sm">dbt (SQL versionado + testes) sobre DuckDB (banco em arquivo). Para o negócio: cada regra está escrita e pode ser revista.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">03 / publica</span></div><h3>Uma base, três usos</h3><p class="t-body-sm">{n_tables} tabelas agregadas em Parquet, sem dado de cliente, com dicionário. Dashboard, agente e slides leem a mesma base.</p></div>
     </div>
     <div class="joined kpis">
       {kpi_sm("Testes", br(n_tests_dbt + n_tests_py), f"{br(n_tests_dbt)} no dbt + {br(n_tests_py)} em Python, a cada execução")}
@@ -345,7 +375,23 @@ board = f"""
   </div>
 </section>
 
-<!-- 06 · Decisões técnicas -->
+<!-- 06 · Camadas do modelo -->
+<section class="slide" data-section="O que construímos" data-template="dashboard" data-tagline>
+  {WM}
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:30px;">
+    <div class="head" style="max-width:1700px"><span class="overline" data-anim="up">O modelo de dados (Kimball)</span><h2 class="t-title" data-anim="up" style="font-size:52px">Cada camada tem um trabalho, <span class="hl" data-anim="hl">e cada tabela declara o que é uma linha</span></h2></div>
+    {table_html("1.05fr 1.7fr 1.35fr 1.6fr", ["Camada", "O que faz", "Exemplo", "Por que importa ao negócio"], [
+        [f"Staging · {layers.get('staging', 0)} modelos", "1 por arquivo: tipos, nomes, fuso (CRM de UTC), duplicatas", "<code>stg_crm__events</code>", "o dado entra igual, sempre, sem interpretação"],
+        [f"Core · {layers.get('dim', 0)} dimensões e {layers.get('fct', 0)} fatos", "fatos = acontecimentos que se somam; dimensões = quem, o quê, quando. Chaves testadas", "<code>fct_redemption_items</code> (1 linha = 1 item)", "cruzamentos sem perder nem duplicar linhas"],
+        [f"Analytics · {layers.get('marts/analytics', 0)} marts", "1 pergunta da diretoria por tabela, com o achado travado por teste", "<code>mart_pix_reconciliation_monthly</code>", "cada resposta tem uma fonte única"],
+        [f"Serving · {layers.get('marts/serving', 0)} tabelas", "estrela agregada por mês, sem dado pessoal, exportada em Parquet", "<code>agg_redemptions_monthly</code>", "dashboard, agente e uma futura ferramenta de BI usam a mesma base"],
+        [f"Referência · {layers.get('seeds', 0)} tabelas", "regras do negócio fora do SQL", "<code>goal_categories</code>, <code>calendar_events</code>", "o negócio muda a regra sem mexer no código"],
+    ], 20)}
+    {meaning("o 'grão' (o que é uma linha) está declarado em cada tabela. É o que impede o erro mais comum de análise: somar coisas que não se somam, como saldos de meses diferentes.")}
+  </div>
+</section>
+
+<!-- 07 · Decisões técnicas -->
 <section class="slide" data-section="O que construímos" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
@@ -354,128 +400,167 @@ board = f"""
   </div>
 </section>
 
-<!-- 07 · Metas -->
+<!-- 08 · Metas -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
-    <div class="head"><span class="overline" data-anim="up">Metas contratuais · set/2026</span><h2 class="t-title" data-anim="up">Aéreas cumpre. Varejo está abaixo da meta desde junho.</h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
+    <div class="head"><span class="overline" data-anim="up">Metas contratuais · set/2026</span><h2 class="t-title" data-anim="up" style="font-size:54px">Aéreas cumpre. Varejo está abaixo da meta desde junho.</h2></div>
     <div class="joined kpis">
-      {kpi("Aéreas (meta ≥ 50%)", f"{br(last['aereas_pct'], 1)}%", f"cumprida em {months_air_ok} de {months_total} meses")}
-      {kpi("Varejo (meta ≥ 20%)", f"{br(last['varejo_pct'], 1)}%", f"abaixo em {months_var_below} de {months_total} meses")}
-      {kpi("Pix", f"{br(last['pix_pct'], 1)}%", "dos pontos resgatados no mês")}
+      {kpi_sm("Aéreas (meta ≥ 50%)", f"{br(last['aereas_pct'], 1)}%", f"cumprida em {months_air_ok} de {months_total} meses")}
+      {kpi_sm("Varejo (meta ≥ 20%)", f"{br(last['varejo_pct'], 1)}%", f"abaixo em {months_var_below} de {months_total} meses")}
+      {kpi_sm("Pix", f"{br(last['pix_pct'], 1)}%", "dos pontos resgatados no mês")}
     </div>
-    <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:80px; align-items:end; padding-bottom:40px;">
-      {var_bars}
-      <div data-anim="up">{meaning(f"a meta de varejo deixou de ser cumprida com o Pix. Sem o Pix no denominador, varejo estaria em {br(ex_pix_var, 1)}%. Na visão estrita (só produto) nunca passou de {br(strict_max, 1)}%.")}{source("mart_goal_attainment_monthly (visão contrato = definição do operador)")}</div>
+    <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:60px; align-items:end; padding-bottom:34px;">
+      {bars_html([(mlabel(m), g.loc[m, "varejo_pct"], f"{br(g.loc[m, 'varejo_pct'], 1)}%", g.loc[m, "varejo_pct"] < 20) for m in var_months], 170, ref=20, maxv=30)}
+      <div data-anim="up">{meaning(f"a meta de varejo deixou de ser cumprida com o Pix. Sem o Pix no denominador, varejo estaria em {br(ex_pix_var, 1)}%. Na visão estrita (só produto) nunca passou de {br(strict_max, 1)}%.")}</div>
     </div>
+    {tech_strip([
+        ("Dados", "<code>fct_redemption_items</code> (1 linha = 1 item) + <code>dim_product</code>, que classifica cada fornecedor pela tabela de referência <code>goal_categories</code>"),
+        ("Regra", "só resgate efetivo (APROVADO, líquido de devoluções); % = pontos da categoria ÷ pontos do mês, em <code>mart_goal_attainment_monthly</code>"),
+        ("Teste", "a visão contrato reproduz o relatório do operador com até 1,5 p.p. em todos os meses; o dashboard sem filtro mostra o mesmo número"),
+    ])}
   </div>
 </section>
 
-<!-- 08 · Waterfall -->
+<!-- 09 · Waterfall -->
 <section class="slide" data-section="O que os dados mostram" data-template="waterfall" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-columns:1fr 2fr; gap:100px; align-items:center;">
-    <div class="head">
-      <span class="overline" data-anim="up">Pontos resgatados por mês (mil)</span>
-      <h2 class="t-title" data-anim="up">O Pix <span class="hl" data-anim="hl">somou</span>, quase não substituiu</h2>
-      <p class="t-body-sm" data-anim="up">Média mensal antes (fev a 26/mai/2026) e depois do Pix (27/mai a set/2026). Aéreas e varejo cresceram em pontos. Só a transferência a parceiros encolheu: quem queria "converter" pontos agora recebe dinheiro.</p>
-      {meaning("a queda das metas é efeito do denominador, não perda de resgates em aéreas e varejo. O cliente quer liquidez, e o Pix atendeu uma demanda nova.")}
-      {source("mart_redemption_economics (resgates efetivos, líquidos de devoluções)")}
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
+    <div style="display:grid; grid-template-columns:1fr 1.9fr; gap:70px; align-items:center; padding-bottom:40px;">
+      <div class="head">
+        <span class="overline" data-anim="up">Pontos resgatados por mês (mil)</span>
+        <h2 class="t-title" data-anim="up" style="font-size:54px">O Pix <span class="hl" data-anim="hl">somou</span>, quase não substituiu</h2>
+        {meaning("aéreas e varejo cresceram em pontos; só a transferência a parceiros encolheu. A queda das metas é efeito do denominador, não perda de resgates.")}
+      </div>
+      <div class="wf" style="height:440px" data-waterfall='{json.dumps(wf_items, ensure_ascii=False)}'></div>
     </div>
-    <div class="wf" data-waterfall='{json.dumps(wf_items, ensure_ascii=False)}'></div>
+    {tech_strip([
+        ("Dados", "<code>mart_redemption_economics</code>: resgates efetivos por período × modalidade"),
+        ("Regra", "média mensal (30,4 dias) para comparar períodos de tamanhos diferentes: antes = fev a 26/mai (115 dias, sem o 12/01); depois = 27/mai a set (127 dias)"),
+        ("Teste", "o waterfall só desenha se base + variações = total; agregados publicados = fatos de origem"),
+    ])}
   </div>
 </section>
 
-<!-- 09 · 12/01 -->
+<!-- 10 · 12/01 -->
 <section class="slide" data-section="O que os dados mostram" data-template="big-number" data-tagline>
   {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:34px;">
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:26px;">
     <span class="overline" data-anim="up">Ponto de atenção · 12/01/2026</span>
-    <div class="t-data-xl"><span data-anim="count" data-to="{round(prof['atypical_day_air_points'] / 1e6)}">{round(prof['atypical_day_air_points'] / 1e6)}</span><span class="unit"> mi pontos em um dia</span></div>
-    <p class="t-sub" style="max-width:1500px; color:var(--mid)" data-anim="up">{br(prof['atypical_day_air_items'])} resgates aéreos num só dia, espalhados igualmente nas 24h, de clientes com saldo migrado e <span class="hl" data-anim="hl">sem campanha no CRM.</span></p>
-    <p class="t-body-sm" style="max-width:1500px" data-anim="up">Leva aéreas a {br(jan_air, 1)}% em jan/2026 ({br(jan_air_ex, 1)}% sem o dia). Hipótese principal: promoção de passagens não registrada no CRM; alternativa: carga em lote do programa anterior. <b style="color:var(--hi)">Precisa ser validado com a área de negócio.</b></p>
-    {meaning("o dado não foi apagado, só marcado. A comparação 'antes do Pix' usa fev a mai/2026 para não ser inflada por esse dia.")}
+    <div class="t-data-xl" style="font-size:170px"><span data-anim="count" data-to="{round(prof['atypical_day_air_points'] / 1e6)}">{round(prof['atypical_day_air_points'] / 1e6)}</span><span class="unit"> mi pontos em um dia</span></div>
+    <p class="t-sub" style="max-width:1600px; color:var(--mid); font-size:32px" data-anim="up">{br(prof['atypical_day_air_items'])} resgates aéreos num só dia, espalhados igualmente nas 24h, de clientes com saldo migrado e <span class="hl" data-anim="hl">sem campanha no CRM.</span></p>
+    <p class="t-body-sm" style="max-width:1600px" data-anim="up">Leva aéreas a {br(jan_air, 1)}% em jan/2026 ({br(jan_air_ex, 1)}% sem o dia). Hipótese principal: promoção de passagens não registrada no CRM; alternativa: carga em lote do programa anterior. <b style="color:var(--hi)">Precisa ser validado com a área de negócio.</b></p>
+    {tech_strip([
+        ("Dados", "contagens em <code>mart_data_profile</code>; resgates por hora em <code>fct_redemption_items</code>; campanhas em <code>fct_crm_events</code>"),
+        ("Regra", "o dia é marcado (não apagado) na tabela de referência <code>calendar_events</code>, que vira <code>dim_date.is_atypical_day</code>"),
+        ("Teste", "métricas de perfil recalculadas a cada build; a linha de base usa <code>is_pre_pix_baseline</code>"),
+    ])}
   </div>
 </section>
 
-<!-- 10 · CRM -->
+<!-- 11 · CRM -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
-    <div class="head"><span class="overline" data-anim="up">CRM: "a comunicação de lançamento explica o sucesso do Pix"</span><h2 class="t-title" data-anim="up">Não se sustenta: <span class="hl" data-anim="hl">sem comunicação, a adoção foi a mesma.</span></h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
+    <div class="head"><span class="overline" data-anim="up">CRM: "a comunicação de lançamento explica o sucesso do Pix"</span><h2 class="t-title" data-anim="up" style="font-size:54px">Não se sustenta: <span class="hl" data-anim="hl">sem comunicação, a adoção foi a mesma.</span></h2></div>
     <div class="joined kpis">
-      {kpi("Recebeu o e-mail", f"{br(email_pct, 1)}%", "adotou o Pix")}
-      {kpi("Nenhuma comunicação", f"{br(none_pct, 1)}%", "adotou o Pix")}
-      {kpi("Usou até 7 dias após o e-mail", f"{br(week_pct, 1)}%", f"{br(late_pct, 0)}% só depois de 30 dias")}
+      {kpi_sm("Recebeu o e-mail", f"{br(email_pct, 1)}%", "adotou o Pix")}
+      {kpi_sm("Nenhuma comunicação", f"{br(none_pct, 1)}%", "adotou o Pix")}
+      {kpi_sm("Usou até 7 dias após o e-mail", f"{br(week_pct, 1)}%", f"{br(late_pct, 0)}% só depois de 30 dias")}
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
-      <p class="t-body-sm" data-anim="up">Quem clicou no e-mail adotou {br(click_pct, 1)}%. O primeiro Pix (27/05, 09:15) é anterior ao primeiro envio (28/05, 10:00), e o link do e-mail levava ao catálogo, não ao Pix. <b style="color:var(--hi)">Ressalva:</b> o CRM não tem grupo de controle ({br(prof['crm_control_group_null_pct'], 0)}% vazio): a leitura é descritiva, não causal.</p>
-      <div data-anim="up">{meaning("o produto em si (dinheiro na conta) explica melhor a adoção. Comunicação não é a alavanca para frear ou estimular o Pix; preço e regra são.")}{source("mart_crm_pix_launch_adoption, mart_crm_pix_launch_timing")}</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:50px;">
+      <p class="t-body-sm" data-anim="up">O primeiro Pix (27/05, 09:15) é anterior ao primeiro envio (28/05, 10:00); o link do e-mail levava ao catálogo. <b style="color:var(--hi)">Ressalva:</b> sem grupo de controle ({br(prof['crm_control_group_null_pct'], 0)}% vazio), a leitura é descritiva, não causal.</p>
+      {meaning("o produto em si (dinheiro na conta) explica melhor a adoção. A alavanca para frear ou estimular o Pix é preço e regra, não comunicação.")}
     </div>
+    {tech_strip([
+        ("Dados", "<code>stg_crm__events</code> converte o horário de UTC para Brasília (teste unitário); <code>fct_crm_events</code> liga cada evento ao cliente e à campanha"),
+        ("Regra", "clientes separados por exposição na janela 27/05 a 04/06 e por histórico de resgate (compara clientes parecidos); 'recebeu' = envio efetivo, não falha"),
+        ("Teste", "os segmentos de <code>mart_crm_pix_launch_adoption</code> somam exatamente os 12.000 clientes"),
+    ])}
   </div>
 </section>
 
-<!-- 11 · Operador -->
+<!-- 12 · Operador -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
-    <div class="head"><span class="overline" data-anim="up">Operador: "o Pix sai a cerca de R$ 0,016 por ponto"</span><h2 class="t-title" data-anim="up">Falso: o Pix custa <span class="hl" data-anim="hl">R$ {br(pix_cost, 4)}</span> em todos os meses.</h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
+    <div class="head"><span class="overline" data-anim="up">Operador: "o Pix sai a cerca de R$ 0,016 por ponto"</span><h2 class="t-title" data-anim="up" style="font-size:54px">Falso: o Pix custa <span class="hl" data-anim="hl">R$ {br(pix_cost, 4)}</span> em todos os meses.</h2></div>
     <div class="joined kpis">
-      {kpi("Custo real", f"R$ {br(pix_cost, 4)}", "R$ creditados ÷ pontos pagos")}
-      {kpi("Relatório do operador", f"R$ {br(op_cost, 4)}", "R$ pagos ÷ pontos de todos os pedidos")}
-      {kpi("Pontos sem pagamento", f"{br(non_eff_pct, 1)}%", "cancelados, inválidos, estornados")}
+      {kpi_sm("Custo real", f"R$ {br(pix_cost, 4)}", "R$ creditados ÷ pontos pagos")}
+      {kpi_sm("Relatório do operador", f"R$ {br(op_cost, 4)}", "R$ pagos ÷ pontos de todos os pedidos")}
+      {kpi_sm("Pontos sem pagamento", f"{br(non_eff_pct, 1)}%", "cancelados, inválidos, estornados")}
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
-      <p class="t-body-sm" data-anim="up">O relatório divide os reais efetivamente pagos pelos pontos de todos os pedidos Pix, inclusive os nunca pagos. As transações e os pontos do relatório batem exatamente com essa base (teste automatizado). Em aberto: os reais do operador ficam 0,2% a 0,7% abaixo dos pagos.</p>
-      <div data-anim="up">{meaning("o Pix não é mais barato que o anunciado. O banco recebe um relatório com base misturada, e isso precisa ser corrigido na fonte.")}{source("mart_pix_reconciliation_monthly")}</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:50px;">
+      <p class="t-body-sm" data-anim="up">O relatório divide os reais pagos pelos pontos de todos os pedidos Pix, inclusive os nunca pagos. Em aberto: os reais do operador ficam 0,2% a 0,7% abaixo dos pagos.</p>
+      {meaning("o Pix não é mais barato que o anunciado. O banco recebe um relatório com base misturada, que precisa ser corrigido na fonte.")}
     </div>
+    {tech_strip([
+        ("Dados", "<code>fct_redemption_items</code> (pedidos Pix de todos os status) × <code>stg_operador__monthly_report</code> (o relatório)"),
+        ("Regra", "custo real = R$ creditados ÷ pontos dos resgates efetivos; depois, reproduzimos o número do operador com cada combinação de status"),
+        ("Teste", "custo entre R$ 0,01895 e R$ 0,01905 em todo mês; pontos e transações do operador = todos os status (bate exato)"),
+    ])}
   </div>
 </section>
 
-<!-- 12 · Breakage -->
+<!-- 13 · Breakage -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
-    <div class="head"><span class="overline" data-anim="up">Diretor: "nosso breakage está em 40%; a meta é não passar de 20%"</span><h2 class="t-title" data-anim="up">Não é 40%. Mas o migrado <span class="hl" data-anim="hl">passa de 20% em outubro.</span></h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
+    <div class="head"><span class="overline" data-anim="up">Diretor: "nosso breakage está em 40%; a meta é não passar de 20%"</span><h2 class="t-title" data-anim="up" style="font-size:54px">Não é 40%. Mas o migrado <span class="hl" data-anim="hl">passa de 20% em outubro.</span></h2></div>
     <div class="joined kpis">
-      {kpi("Breakage do programa novo", f"{br(brk_new, 0)}%", "nada venceu: validade de 24 meses")}
-      {kpi("Breakage do saldo migrado", f"{br(brk_mig, 1)}%", f"+{br(mig_step, 1)} p.p. por mês")}
-      {kpi("Expiração ÷ resgate", f"{br(etr.min(), 0)} a {br(etr.max(), 0)}%", "fev-abr/2026: provável origem do 40%")}
+      {kpi_sm("Breakage do programa novo", f"{br(brk_new, 0)}%", "nada venceu: validade de 24 meses")}
+      {kpi_sm("Breakage do saldo migrado", f"{br(brk_mig, 1)}%", f"+{br(mig_step, 1)} p.p. por mês")}
+      {kpi_sm("Expiração ÷ resgate", f"{br(etr.min(), 0)} a {br(etr.max(), 0)}%", "fev-abr/2026: provável origem do 40%")}
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
-      <p class="t-body-sm" data-anim="up">Breakage, pela definição de mercado (IFRS 15), é expirado ÷ emitido por safra. A Multiplus operou entre 21% e 24% (2010-2012) e geria a taxa numa faixa ideal. A razão "expiração do mês ÷ resgate do mês" não é breakage e cai com o Pix só porque o resgate cresceu.</p>
-      <div data-anim="up">{meaning("não há excesso de pontos expirando no programa novo. O risco real é o saldo migrado, e o Pix tende a reduzir o breakage futuro, que é margem do programa.")}{source("mart_points_flow_monthly; benchmark em entrega/docs/benchmark_breakage.md")}</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:50px;">
+      <p class="t-body-sm" data-anim="up">Breakage, pela definição de mercado (IFRS 15), é vencido ÷ emitido, por safra. A Multiplus operou entre 21% e 24% (2010-2012). "Expiração ÷ resgate" não é breakage e cai com o Pix só porque o resgate cresceu.</p>
+      {meaning("não há excesso de pontos vencendo no programa novo. O risco é o saldo migrado, e o Pix tende a reduzir o breakage futuro, que é margem do programa.")}
     </div>
+    {tech_strip([
+        ("Dados", "extrato de pontos (<code>fct_points_movements</code>) → foto do saldo por cliente × mês (<code>fct_points_balance_monthly</code>) → <code>mart_points_flow_monthly</code>"),
+        ("Regra", "breakage separado por origem (programa novo × migrado); a razão 'expiração ÷ resgate' fica no mart só para testar a hipótese do 40%"),
+        ("Teste", "saldo da foto = soma do extrato, cliente a cliente; nenhum cliente com saldo negativo; nenhum ponto do programa novo vencido"),
+    ])}
   </div>
 </section>
 
-<!-- 13 · Saúde financeira -->
+<!-- 14 · Saúde financeira -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-columns:1fr 1.3fr; gap:100px; align-items:center;">
-    <div class="head">
-      <span class="overline" data-anim="up">Custo do programa por ponto resgatado</span>
-      <h2 class="t-title" data-anim="up">O Pix é a <span class="hl" data-anim="hl">modalidade mais cara</span></h2>
-      <p class="t-body-sm" data-anim="up">O enunciado diz que aéreas já custam mais do que o banco paga por ponto. Cada ponto em Pix custa pelo menos R$ {br(pix_cost - cost['aereas'], 4)} a mais que um ponto em aéreas: ~R$ {br(loss_vs_air / 1e3, 0)} mil/mês sobre ~R$ {br(pix_month_brl / 1e3, 0)} mil pagos em dinheiro em set/26.</p>
-      <p class="t-body-sm" data-anim="up"><b style="color:var(--hi)">Hipótese declarada:</b> custo ≈ valor do produto − dinheiro pago pelo cliente. Falta o preço por ponto do contrato com o banco.</p>
-      {meaning("estimular o Pix aumenta o custo sem ajudar nenhuma meta. O Pix só se paga com um preço por ponto menor.")}
-      {source("mart_redemption_economics (depois do Pix)")}
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
+    <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:80px; align-items:center;">
+      <div class="head">
+        <span class="overline" data-anim="up">Custo do programa por ponto resgatado</span>
+        <h2 class="t-title" data-anim="up" style="font-size:54px">O Pix é a <span class="hl" data-anim="hl">modalidade mais cara</span></h2>
+        <p class="t-body-sm" data-anim="up">Aéreas já custam mais do que o banco paga por ponto (enunciado). Cada ponto em Pix custa pelo menos R$ {br(pix_cost - cost['aereas'], 4)} a mais: ~R$ {br(loss_vs_air / 1e3, 0)} mil/mês sobre ~R$ {br(pix_month_brl / 1e3, 0)} mil pagos em set/26.</p>
+        {meaning("estimular o Pix aumenta o custo sem ajudar nenhuma meta. Ele só se paga com um preço por ponto menor.")}
+      </div>
+      <div data-anim="up">{bars_html([
+          ("Transferência", cost["transferencia_parceiro"], f"R$ {br(cost['transferencia_parceiro'], 4)}", False),
+          ("Varejo", cost["varejo"], f"R$ {br(cost['varejo'], 4)}", False),
+          ("Aéreas", cost["aereas"], f"R$ {br(cost['aereas'], 4)}", False),
+          ("Pix", pix_cost, f"R$ {br(pix_cost, 4)}", True),
+      ], 280, maxv=0.023)}</div>
     </div>
-    <div data-anim="up">{cost_bars}</div>
+    {tech_strip([
+        ("Dados", "<code>mart_redemption_economics</code>: valor do produto, dinheiro pago pelo cliente e pontos, por modalidade, depois do Pix"),
+        ("Regra", "custo por ponto ≈ (valor do produto − dinheiro do cliente) ÷ pontos. Hipótese declarada, registrada na documentação da tabela e repetida pelo agente"),
+        ("Teste", "unicidade período × modalidade; o preço do banco por ponto não está nos dados (pergunta pendente)"),
+    ])}
   </div>
 </section>
 
-<!-- 14 · Regras revisáveis -->
+<!-- 15 · Regras revisáveis -->
 <section class="slide" data-section="Em aberto" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
     <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">Regras revisáveis</span><h2 class="t-title" data-anim="up" style="font-size:54px">As regras estão abertas a ajuste, <span class="hl" data-anim="hl">e o efeito de cada troca já foi medido</span></h2></div>
     {table_html("1.3fr 1.1fr 1.8fr", ["Regra adotada", "Alternativa", "Se trocar, o que muda"], open_rows, 22)}
-    {meaning("nenhuma alternativa inverte a recomendação: em todas, o Pix continua sendo a modalidade mais cara e a que mais pressiona a meta de varejo.")}
+    {meaning("nenhuma alternativa inverte a recomendação. Tecnicamente, cada troca é uma mudança numa tabela de referência ou num join, já preparada no modelo.")}
   </div>
 </section>
 
-<!-- 15 · Perguntas pendentes -->
+<!-- 16 · Perguntas pendentes -->
 <section class="slide" data-section="Em aberto" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
@@ -484,7 +569,22 @@ board = f"""
   </div>
 </section>
 
-<!-- 16 · Recomendação e próximos passos -->
+<!-- 17 · Dashboard e agente -->
+<section class="slide" data-section="Acompanhamento" data-template="3-passos" data-tagline>
+  {WM}
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:30px; padding-top:110px;">
+    <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">Como a diretoria acompanha</span><h2 class="t-title" data-anim="up" style="font-size:54px">Um dashboard e um analista de IA <span class="hl" data-anim="hl">sobre a mesma base</span></h2></div>
+    <div class="joined flow">
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">01 / documenta</span></div><h3>Cada campo explicado</h3><p class="t-body-sm">A descrição de cada tabela e coluna mora na documentação do dbt e vira um dicionário publicado. O processo falha se algum campo publicado estiver sem descrição.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / mostra</span></div><h3>Dashboard · 4 telas</h3><p class="t-body-sm">Streamlit, lendo só a base publicada: visão geral, metas e Pix, breakage e CRM, explorar. Teste: sem filtro, mostra exatamente os números do modelo.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">03 / responde</span></div><h3>Analista de IA (Gemini)</h3><p class="t-body-sm">Lê o dicionário, escreve SQL somente leitura sobre a base agregada e mostra a consulta. Não acessa os arquivos de origem e recusa dado individual.</p></div>
+    </div>
+    <p class="t-body-sm" data-anim="up"><b style="color:var(--hi)">Exemplo real:</b> "As metas foram cumpridas em setembro?" → "Aéreas {br(last['aereas_pct'], 2)}%, cumprida; varejo {br(last['varejo_pct'], 2)}%, não cumprida (fonte: mart_goal_attainment_monthly)". Lista de clientes por ID: recusada por privacidade.</p>
+    <p class="t-caption" data-anim="up">{APP_URL}</p>
+  </div>
+</section>
+
+<!-- 18 · Recomendação e próximos passos -->
 <section class="slide" data-section="Recomendação" data-template="sumario-executivo" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:20px; padding-top:100px;">
@@ -495,7 +595,7 @@ board = f"""
       {card_sm("3 · Corrigir o relatório", "Base única no operador", f"{br(non_eff_pct, 1)}% dos pontos Pix do relatório não foram pagos. Falta: a regra de R$ do operador.")}
     </div>
     <div class="grid-3" style="grid-template-columns:repeat(2,1fr)">
-      {card_sm("4 · Padronizar o breakage", "Expirado ÷ emitido, por safra", f"Migrado em {br(brk_mig, 1)}%, subindo {br(mig_step, 1)} p.p./mês. Falta: a regra de expiração do migrado.")}
+      {card_sm("4 · Padronizar o breakage", "Vencido ÷ emitido, por safra", f"Migrado em {br(brk_mig, 1)}%, subindo {br(mig_step, 1)} p.p./mês. Falta: a regra de vencimento do migrado.")}
       {card_sm("5 · Medir antes de atribuir", "Grupo de controle no CRM", f"{br(none_pct, 1)}% de adoção sem nenhuma comunicação. Falta: teste A/B e explicação para 12/01.")}
     </div>
     <div class="cta" data-anim="featured" style="padding:20px 36px"><p class="t-body-sm" style="color:#fff"><b>Próximos passos:</b> semana que vem, decisão do board sobre a calibragem e a pauta com o banco · 30 dias, respostas do negócio às perguntas pendentes · 60 dias, nova taxa do Pix em teste A/B, acompanhada no dashboard.</p></div>
