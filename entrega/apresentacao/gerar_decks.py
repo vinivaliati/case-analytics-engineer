@@ -111,8 +111,20 @@ def card(label: str, title: str, body: str, anim: str = "up") -> str:
     return f'<div class="card" data-anim="{anim}"><span class="t-label" style="color:var(--accent-data)">{label}</span><h3>{title}</h3><p class="t-body-sm">{body}</p></div>'
 
 
+def card_sm(label: str, title: str, body: str) -> str:
+    """Card compacto (padding e título menores) para slides com duas fileiras de cards."""
+    return (f'<div class="card" data-anim="up" style="padding:24px 28px"><span class="t-label" style="color:var(--accent-data)">{label}</span>'
+            f'<h3 style="font-size:25px; margin:12px 0 10px">{title}</h3><p class="t-body-sm">{body}</p></div>')
+
+
 def kpi(over: str, value: str, sub: str) -> str:
     return f'<div class="kpi" data-anim="up"><span class="overline">{over}</span><div class="t-data-lg" style="margin-top:14px">{value}</div><p class="t-body-sm">{sub}</p></div>'
+
+
+def kpi_sm(over: str, value: str, sub: str) -> str:
+    """KPI compacto (número menor) para slides que já têm outro bloco grande."""
+    return (f'<div class="kpi" data-anim="up" style="padding:20px 28px"><span class="overline">{over}</span>'
+            f'<div class="t-data-lg" style="margin-top:8px; font-size:50px">{value}</div><p class="t-body-sm" style="margin-top:6px">{sub}</p></div>')
 
 
 def source(text: str) -> str:
@@ -287,91 +299,53 @@ board = f"""
   </div>
 </section>
 
-<!-- 03 · Agenda -->
-<section class="slide" data-section="Agenda" data-template="agenda" data-tagline>
-  {WM}
-  <div class="pad" style="display:grid; grid-template-columns:1fr 1.3fr; align-items:center; gap:120px;">
-    <div class="head"><span class="overline" data-anim="up">Agenda</span><h2 class="t-title" data-anim="up">Uma história em cinco partes</h2></div>
-    <ol style="list-style:none; display:grid; gap:0;" class="joined">
-      <li style="background:var(--n900); padding:30px 36px; display:flex; gap:32px; align-items:baseline" data-anim="seq"><span class="t-label" style="color:var(--accent-data)">01</span><span class="t-sub">O que recebemos</span></li>
-      <li style="background:var(--n900); padding:30px 36px; display:flex; gap:32px; align-items:baseline" data-anim="seq"><span class="t-label" style="color:var(--accent-data)">02</span><span class="t-sub">O que construímos para responder</span></li>
-      <li style="background:var(--n900); padding:30px 36px; display:flex; gap:32px; align-items:baseline" data-anim="seq"><span class="t-label" style="color:var(--accent-data)">03</span><span class="t-sub">O que os dados mostram</span></li>
-      <li style="background:var(--n900); padding:30px 36px; display:flex; gap:32px; align-items:baseline" data-anim="seq"><span class="t-label" style="color:var(--accent-data)">04</span><span class="t-sub">O que ainda está em aberto</span></li>
-      <li style="background:var(--n900); padding:30px 36px; display:flex; gap:32px; align-items:baseline" data-anim="seq"><span class="t-label" style="color:var(--accent-data)">05</span><span class="t-sub">O que recomendamos</span></li>
-    </ol>
-  </div>
-</section>
-
-{chapter(1, "O que<br>recebemos", "O que recebemos")}
-
-<!-- 04 · Contexto -->
+<!-- 03 · O que recebemos -->
 <section class="slide" data-section="O que recebemos" data-template="sumario-executivo" data-tagline>
   {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:48px;">
-    <div class="head" style="max-width:1600px"><span class="overline" data-anim="up">O contexto</span><h2 class="t-title" data-anim="up">Uma decisão para a semana que vem, com <span class="hl" data-anim="hl">metas de contrato em jogo</span></h2></div>
-    <div class="grid-3">
-      {card("O programa", "Pontua+, do Banco Aurora", "Quem usa o cartão acumula pontos e troca por passagens aéreas, produtos de varejo ou transferências a parceiros. Uma empresa do grupo opera e presta contas ao banco todo mês.")}
-      {card("O Pix · 27/05/2026", "Pontos viram dinheiro", "O cliente troca pontos por dinheiro na conta a R$ 0,019 por ponto (cerca de 53 pontos = R$ 1). O resgate nessa modalidade disparou.")}
-      {card("O contrato", "Aéreas ≥ 50% · varejo ≥ 20%", "Metas sobre o total de pontos resgatados. Aéreas custam ao programa mais do que o banco paga por ponto; varejo é onde o grupo tem parceiros próprios.")}
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:30px; padding-top:70px;">
+    <div class="head" style="max-width:1700px"><span class="overline" data-anim="up">O que recebemos</span><h2 class="t-title" data-anim="up" style="font-size:52px">Estimular ou coibir o Pix? <span class="hl" data-anim="hl">Com metas de contrato e três afirmações em jogo</span></h2></div>
+    <div class="joined" style="grid-template-columns:repeat(3,1fr)" data-anim="up">
+      <div style="background:var(--n900); padding:22px 26px"><span class="t-label" style="color:var(--accent-data)">O programa</span><p class="t-body-sm" style="margin-top:10px">Pontua+, do Banco Aurora: pontos do cartão trocados por aéreas, varejo ou transferências. Operado por uma empresa do grupo, que presta contas ao banco todo mês.</p></div>
+      <div style="background:var(--n900); padding:22px 26px"><span class="t-label" style="color:var(--accent-data)">O Pix · 27/05/2026</span><p class="t-body-sm" style="margin-top:10px">Pontos viram dinheiro na conta a R$ 0,019 por ponto (cerca de 53 pontos = R$ 1). O resgate nessa modalidade disparou.</p></div>
+      <div style="background:var(--n900); padding:22px 26px"><span class="t-label" style="color:var(--accent-data)">O contrato</span><p class="t-body-sm" style="margin-top:10px">Aéreas ≥ 50% e varejo ≥ 20% dos pontos resgatados. Aéreas custam mais do que o banco paga por ponto; varejo é onde o grupo tem parceiros próprios.</p></div>
     </div>
-    <p class="t-sub" style="color:var(--hi)" data-anim="up">A pergunta da diretoria: <span class="hl" data-anim="hl">estimular ou coibir o resgate via Pix?</span></p>
+    {table_html("1fr 1.6fr 1.9fr", ["Quem afirmou", "A afirmação", "Se fosse verdade, a decisão seria"], [
+        ["Time de CRM", "“A comunicação de lançamento explica o sucesso do Pix”", "a alavanca para estimular ou frear o Pix é a comunicação"],
+        ["Relatório do operador", "“O Pix sai a cerca de R$ 0,016 por ponto”", "o Pix é 16% mais barato que o anunciado, mais barato que aéreas"],
+        ["Um diretor", "“Nosso breakage está em 40%; a meta é não passar de 20%”", "há pontos demais vencendo sem uso, e o programa precisa estimular resgates"],
+    ], 21)}
   </div>
 </section>
 
-<!-- 05 · Afirmações -->
-<section class="slide" data-section="O que recebemos" data-template="sumario-executivo" data-tagline>
-  {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:48px;">
-    <div class="head" style="max-width:1600px"><span class="overline" data-anim="up">Três afirmações para checar</span><h2 class="t-title" data-anim="up">Cada uma, se verdadeira, levaria a uma decisão diferente</h2></div>
-    <div class="grid-3">
-      {card("Time de CRM", "“A comunicação de lançamento explica o sucesso do Pix”", "Se for verdade: o sucesso é da campanha, e a alavanca para estimular ou frear o Pix é a comunicação.")}
-      {card("Relatório do operador", "“O Pix sai a cerca de R$ 0,016 por ponto”", "Se for verdade: o Pix custa 16% menos que o anunciado e seria uma modalidade mais barata que aéreas.")}
-      {card("Um diretor", "“Nosso breakage está em 40%; a meta é não passar de 20%”", "Se for verdade: pontos demais expiram sem uso, e o cliente percebe o programa como pouco útil.")}
-    </div>
-  </div>
-</section>
-
-<!-- 06 · Dados recebidos -->
+<!-- 04 · Os dados e o que revelaram -->
 <section class="slide" data-section="O que recebemos" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:grid; grid-template-columns:1.7fr 1fr; gap:64px; align-items:center;">
-    <div data-anim="up">{table_html("1.1fr .7fr .6fr 2fr", ["Arquivo", "Origem", "Linhas", "Uma linha é"], data_rows, 20)}</div>
-    <div class="head">
-      <span class="overline" data-anim="up">Os dados</span>
-      <h2 class="t-title" data-anim="up" style="font-size:52px">9 arquivos, 5 sistemas, <span class="hl" data-anim="hl">nenhum dicionário</span></h2>
-      <p class="t-body-sm" data-anim="up">Entender os arquivos fazia parte do exercício. Antes de qualquer número, cada arquivo foi investigado: o que é uma linha, qual coluna a identifica, o que vem vazio e como as tabelas se ligam.</p>
-      {meaning("cada número desta apresentação parte desses arquivos, e a contagem de linhas de cada um é conferida contra o MANIFESTO a cada execução.")}
-      {source("contexto/MANIFESTO_v1.csv")}
-    </div>
-  </div>
-</section>
-
-<!-- 07 · Descobertas -->
-<section class="slide" data-section="O que recebemos" data-template="dashboard" data-tagline>
-  {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:36px;">
-    <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">O que a investigação revelou</span><h2 class="t-title" data-anim="up" style="font-size:54px">Antes de responder, os dados precisaram ser entendidos: <span class="hl" data-anim="hl">cada descoberta virou uma decisão</span></h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
+    <div class="head" style="max-width:1700px"><span class="overline" data-anim="up">9 arquivos, 5 sistemas, nenhum dicionário de dados</span><h2 class="t-title" data-anim="up" style="font-size:52px">Antes de responder, os dados precisaram ser entendidos: <span class="hl" data-anim="hl">cada descoberta virou uma decisão</span></h2></div>
     {table_html("1fr 2fr 1.7fr", ["Descoberta", "Evidência nos dados", "O que decidimos"], discovery_rows, 22)}
-    {source("mart_data_profile (descobertas recalculadas a cada build)")}
+    {source(f"mart_data_profile (recalculado a cada build); contagens dos arquivos conferidas contra o MANIFESTO ({br(sum(manifest_rows.values()))} linhas no total)")}
   </div>
 </section>
 
-{chapter(2, "O que construímos<br>para responder", "O que construímos")}
-
-<!-- 08 · Arquitetura -->
+<!-- 05 · Como construímos -->
 <section class="slide" data-section="O que construímos" data-template="3-passos" data-tagline>
   {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:56px;">
-    <div class="head" style="max-width:1600px"><span class="overline" data-anim="up">Do arquivo à decisão</span><h2 class="t-title" data-anim="up">Um comando reconstrói tudo: <span class="hl" data-anim="hl">qualquer número aqui é rastreável</span></h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:30px; padding-top:110px;">
+    <div class="head" style="max-width:1600px"><span class="overline" data-anim="up">Do arquivo à decisão</span><h2 class="t-title" data-anim="up" style="font-size:54px">Um comando reconstrói tudo: <span class="hl" data-anim="hl">qualquer número aqui é rastreável</span></h2></div>
     <div class="joined flow">
       <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">01 / confere</span></div><h3>Os arquivos são os do case</h3><p class="t-body-sm">Impressão digital (SHA-256) e contagem dos 9 arquivos conferidas antes de tudo. Para o negócio: ninguém trabalha com uma versão diferente dos dados.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
-      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / modela</span></div><h3>Regras explícitas e testadas</h3><p class="t-body-sm">dbt + DuckDB, modelo Kimball (fatos e dimensões), {br(n_tests_dbt)} testes. Para o negócio: cada regra (o que é resgate, o que é varejo) está escrita e pode ser revista.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / modela</span></div><h3>Regras explícitas e testadas</h3><p class="t-body-sm">dbt + DuckDB, modelo Kimball (fatos e dimensões). Para o negócio: cada regra (o que é resgate, o que é varejo) está escrita e pode ser revista.</p><div class="conn"><svg width="20" height="20" viewBox="0 0 24 24"><circle class="pulse" cx="12" cy="12" r="4"/><path d="M4 12h13m0 0-4-4m4 4-4 4" fill="none" stroke="#00CFFF" stroke-width="2" stroke-linecap="square"/></svg></div></div>
       <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">03 / publica</span></div><h3>Uma base, três usos</h3><p class="t-body-sm">{n_tables} tabelas agregadas (sem dado de cliente) com dicionário. Dashboard, agente de IA e estes slides leem a mesma base: os números são sempre os mesmos.</p></div>
+    </div>
+    <div class="joined kpis">
+      {kpi_sm("Testes", br(n_tests_dbt + n_tests_py), f"{br(n_tests_dbt)} no dbt + {br(n_tests_py)} em Python, a cada execução")}
+      {kpi_sm("Reconciliação", br(prof['items_points_reconciled']), "itens com pontos debitados = pontos pagos")}
+      {kpi_sm("Privacidade", "0", "identificadores de cliente publicados")}
     </div>
   </div>
 </section>
 
-<!-- 09 · Decisões técnicas -->
+<!-- 06 · Decisões técnicas -->
 <section class="slide" data-section="O que construímos" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
@@ -380,26 +354,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 10 · Confiança -->
-<section class="slide" data-section="O que construímos" data-template="dashboard" data-tagline>
-  {WM}
-  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:48px; padding-top:110px;">
-    <div class="head"><span class="overline" data-anim="up">Quanto confiar nos números</span><h2 class="t-title" data-anim="up">{br(n_tests_dbt + n_tests_py)} testes travam <span class="hl" data-anim="hl">os números e as conclusões</span></h2></div>
-    <div class="joined kpis">
-      {kpi("Reconciliação", br(prof['items_points_reconciled']), "itens com pontos debitados = pagos")}
-      {kpi("Relatório do operador", "±1,5 p.p.", "nossa visão reproduz as metas dele")}
-      {kpi("Privacidade", "0", "identificadores de cliente publicados")}
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
-      <p class="t-body-sm" data-anim="up">{br(n_tests_dbt)} testes no dbt e {br(n_tests_py)} em Python. Além de chaves e relacionamentos, há testes que travam os achados: Pix entre R$ 0,01895 e R$ 0,01905, operador somando todos os status, nenhum ponto do programa novo expirado, nenhum cliente com saldo negativo.</p>
-      {meaning("se um dado novo mudar uma conclusão, o processo para antes de o número chegar a um slide ou ao dashboard.")}
-    </div>
-  </div>
-</section>
-
-{chapter(3, "O que os dados<br>mostram", "O que os dados mostram")}
-
-<!-- 11 · Placar -->
+<!-- 07 · Metas -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
@@ -416,7 +371,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 12 · Waterfall -->
+<!-- 08 · Waterfall -->
 <section class="slide" data-section="O que os dados mostram" data-template="waterfall" data-tagline>
   {WM}
   <div class="pad" style="display:grid; grid-template-columns:1fr 2fr; gap:100px; align-items:center;">
@@ -431,7 +386,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 13 · 12/01 -->
+<!-- 09 · 12/01 -->
 <section class="slide" data-section="O que os dados mostram" data-template="big-number" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:34px;">
@@ -443,7 +398,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 14 · CRM -->
+<!-- 10 · CRM -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
@@ -460,7 +415,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 15 · Operador -->
+<!-- 11 · Operador -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
@@ -477,7 +432,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 16 · Breakage -->
+<!-- 12 · Breakage -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
@@ -494,7 +449,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 17 · Saúde financeira -->
+<!-- 13 · Saúde financeira -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:grid; grid-template-columns:1fr 1.3fr; gap:100px; align-items:center;">
@@ -510,19 +465,17 @@ board = f"""
   </div>
 </section>
 
-{chapter(4, "O que ainda<br>está em aberto", "Em aberto")}
-
-<!-- 18 · Decisões revisáveis -->
+<!-- 14 · Regras revisáveis -->
 <section class="slide" data-section="Em aberto" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
-    <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">Decisões revisáveis</span><h2 class="t-title" data-anim="up" style="font-size:54px">As regras estão abertas a ajuste, <span class="hl" data-anim="hl">e o efeito de cada troca já foi medido</span></h2></div>
+    <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">Regras revisáveis</span><h2 class="t-title" data-anim="up" style="font-size:54px">As regras estão abertas a ajuste, <span class="hl" data-anim="hl">e o efeito de cada troca já foi medido</span></h2></div>
     {table_html("1.3fr 1.1fr 1.8fr", ["Regra adotada", "Alternativa", "Se trocar, o que muda"], open_rows, 22)}
     {meaning("nenhuma alternativa inverte a recomendação: em todas, o Pix continua sendo a modalidade mais cara e a que mais pressiona a meta de varejo.")}
   </div>
 </section>
 
-<!-- 19 · Perguntas pendentes -->
+<!-- 15 · Perguntas pendentes -->
 <section class="slide" data-section="Em aberto" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
@@ -531,69 +484,21 @@ board = f"""
   </div>
 </section>
 
-{chapter(5, "O que<br>recomendamos", "Recomendação")}
-
-<!-- 20 · Recomendação -->
+<!-- 16 · Recomendação e próximos passos -->
 <section class="slide" data-section="Recomendação" data-template="sumario-executivo" data-tagline>
   {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:28px; padding-top:120px;">
-    <div class="head"><span class="overline" data-anim="up">Recomendação</span><h2 class="t-title" data-anim="up">Coibir o Pix com calibragem, não eliminar</h2></div>
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:20px; padding-top:100px;">
+    <div class="head"><span class="overline" data-anim="up">Recomendação</span><h2 class="t-title" data-anim="up" style="font-size:50px">Coibir o Pix com calibragem, não eliminar</h2></div>
     <div class="grid-3" style="grid-template-columns:repeat(3,1fr)">
-      {card("1 · Calibrar o Pix", "Taxa menor ou teto mensal", f"Número: R$ {br(pix_cost, 3)}/ponto, o maior custo, {br(last['pix_pct'], 0)}% dos pontos. Falta: preço do banco por ponto e elasticidade da taxa.")}
-      {card("2 · Renegociar a meta", "Pix fora do denominador", f"Número: sem o Pix, varejo {br(ex_pix_var, 1)}% e aéreas {br(ex_pix_air, 1)}%. Falta: como o contrato classifica Pix, transferências e agência.")}
-      {card("3 · Corrigir o relatório", "Base única no operador", f"Número: {br(non_eff_pct, 1)}% dos pontos Pix do relatório não foram pagos. Falta: a regra de R$ do operador.")}
+      {card_sm("1 · Calibrar o Pix", "Taxa menor ou teto mensal", f"R$ {br(pix_cost, 3)}/ponto, o maior custo, {br(last['pix_pct'], 0)}% dos pontos. Falta: preço do banco por ponto.")}
+      {card_sm("2 · Renegociar a meta", "Pix fora do denominador", f"Sem o Pix, varejo {br(ex_pix_var, 1)}% e aéreas {br(ex_pix_air, 1)}%. Falta: como o contrato classifica Pix e transferências.")}
+      {card_sm("3 · Corrigir o relatório", "Base única no operador", f"{br(non_eff_pct, 1)}% dos pontos Pix do relatório não foram pagos. Falta: a regra de R$ do operador.")}
     </div>
     <div class="grid-3" style="grid-template-columns:repeat(2,1fr)">
-      {card("4 · Padronizar o breakage", "Expirado ÷ emitido, por safra", f"Número: migrado em {br(brk_mig, 1)}%, subindo {br(mig_step, 1)} p.p./mês. Falta: a regra de expiração do saldo migrado.")}
-      {card("5 · Medir antes de atribuir", "Grupo de controle no CRM", f"Número: {br(none_pct, 1)}% de adoção sem nenhuma comunicação. Falta: teste A/B e explicação para 12/01.")}
+      {card_sm("4 · Padronizar o breakage", "Expirado ÷ emitido, por safra", f"Migrado em {br(brk_mig, 1)}%, subindo {br(mig_step, 1)} p.p./mês. Falta: a regra de expiração do migrado.")}
+      {card_sm("5 · Medir antes de atribuir", "Grupo de controle no CRM", f"{br(none_pct, 1)}% de adoção sem nenhuma comunicação. Falta: teste A/B e explicação para 12/01.")}
     </div>
-  </div>
-</section>
-
-<!-- 21 · Próximos passos -->
-<section class="slide" data-section="Recomendação" data-template="roadmap" data-tagline>
-  {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:90px;">
-    <div class="head"><span class="overline" data-anim="up">Próximos passos</span><h2 class="t-title" data-anim="up">Decidir agora, medir em 30 dias</h2></div>
-    <div class="tl">
-      <div class="line" style="right:42%" data-anim="draw"></div>
-      <div class="line future" style="left:58%" data-anim="draw"></div>
-      <div class="ms" style="left:0" data-anim="seq"><div class="dot now"></div><p class="t-label">Semana que vem</p><h3>Decisão do board</h3><p class="t-body-sm">Calibragem do Pix e pauta de renegociação das metas com o banco.</p></div>
-      <div class="ms" style="left:34%" data-anim="seq"><div class="dot"></div><p class="t-label">30 dias</p><h3>Respostas do negócio</h3><p class="t-body-sm">Preço do banco por ponto, 12/01, regra do migrado e do relatório do operador.</p></div>
-      <div class="ms" style="left:70%" data-anim="seq"><div class="dot"></div><p class="t-label">60 dias</p><h3>Teste com controle</h3><p class="t-body-sm">Nova taxa do Pix em A/B; acompanhamento no dashboard.</p></div>
-    </div>
-    <p class="t-caption" data-anim="up">trecho tracejado = futuro</p>
-  </div>
-</section>
-
-<!-- 22 · Acompanhamento -->
-<section class="slide" data-section="Recomendação" data-template="dashboard" data-tagline>
-  {WM}
-  <div class="pad" style="display:grid; grid-template-rows:auto auto 1fr; gap:44px; padding-top:110px;">
-    <div class="head"><span class="overline" data-anim="up">Como a diretoria acompanha</span><h2 class="t-title" data-anim="up">Um dashboard e um analista de IA <span class="hl" data-anim="hl">sobre a mesma base</span></h2></div>
-    <div class="joined kpis">
-      {kpi("Dashboard", "4 telas", "visão geral, metas e Pix, breakage e CRM, explorar")}
-      {kpi("Base publicada", f"{n_tables} tabelas", "só agregados, com dicionário de cada campo")}
-      {kpi("Analista de IA", "Gemini", "responde com SQL, mostra a fonte e recusa dado individual")}
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; padding-bottom:40px;">
-      <p class="t-body-sm" data-anim="up"><b style="color:var(--hi)">Exemplo real:</b> "As metas foram cumpridas em setembro?" → "Aéreas {br(last['aereas_pct'], 2)}%, cumprida; varejo {br(last['varejo_pct'], 2)}%, não cumprida (fonte: mart_goal_attainment_monthly)". Pedido de lista de clientes por ID: recusado por privacidade.</p>
-      <div data-anim="up">{meaning("as próximas perguntas da diretoria podem ser respondidas sem um novo projeto, com o mesmo número em todos os canais.")}<p class="t-caption" style="margin-top:12px">{APP_URL}</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 23 · Decisão -->
-<section class="slide" data-section="Decisão" data-template="fechamento" data-tagline>
-  {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:56px;">
-    <div class="head"><span class="overline" data-anim="up">Decisão</span><h2 class="t-title" data-anim="up">O que precisamos decidir</h2></div>
-    <div class="grid-3">
-      {card("01", "Calibrar o Pix", "Taxa por ponto e/ou teto mensal, com teste A/B.")}
-      {card("02", "Pauta com o banco", "Denominador das metas e classificação de transferências e agência.")}
-      {card("03", "Dono das definições", "Breakage, resgate efetivo e relatório do operador com uma regra só.")}
-    </div>
-    <div class="cta" data-anim="featured"><p class="t-sub" style="color:#fff">O Pix fica, mas com um preço que o programa consegue pagar.</p></div>
+    <div class="cta" data-anim="featured" style="padding:20px 36px"><p class="t-body-sm" style="color:#fff"><b>Próximos passos:</b> semana que vem, decisão do board sobre a calibragem e a pauta com o banco · 30 dias, respostas do negócio às perguntas pendentes · 60 dias, nova taxa do Pix em teste A/B, acompanhada no dashboard.</p></div>
   </div>
 </section>
 """
