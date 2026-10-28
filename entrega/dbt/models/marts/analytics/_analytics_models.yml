@@ -260,3 +260,36 @@ models:
         description: Custo estimado do programa por ponto resgatado (R$).
       - name: period_days
         description: Dias do período, usados para a média mensal.
+
+  - name: mart_data_profile
+    description: >
+      Perfil dos dados: as descobertas da exploração inicial como métricas reproduzíveis (fuso do CRM, pagamentos
+      divididos, saldo por cliente, dia atípico). Grão: 1 linha por métrica. Só contagens agregadas.
+    config:
+      meta:
+        grain: "1 linha por métrica"
+        business_questions:
+          - "Quais problemas de qualidade os dados têm?"
+          - "Como sabemos que o CRM está em UTC?"
+          - "Por que o saldo e o nível de cartão são por cliente?"
+    tests:
+      # Descobertas que sustentam decisões do modelo: se mudarem, a decisão precisa ser revista.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "value = 0"
+          config:
+            where: "metric = 'customers_negative_balance_last_month'"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "value = 100"
+          config:
+            where: "metric in ('orders_user_id_null_pct', 'crm_control_group_null_pct')"
+    columns:
+      - name: metric
+        description: "PK. Nome da métrica."
+        tests: [unique, not_null]
+      - name: value
+        description: Valor da métrica (contagem ou %).
+        tests: [not_null]
+      - name: description
+        description: O que a métrica mede e por que importa.

@@ -44,7 +44,7 @@ Regras de negócio que mudam com o negócio ficam em **tabelas de referência** 
 - **Aditividade explícita:** `closing_balance_points` é semi-aditivo (soma entre níveis, nunca entre meses). Contagens de clientes distintos não entram nos agregados, porque não são aditivas.
 - **Nível de cartão:** é o nível atual do cliente, por decisão documentada. A alternativa é `dim_account.card_class`.
 
-## Testes (242 no build)
+## Testes (210 no dbt + 19 em Python)
 
 - **Fonte:** contagem igual à do MANIFESTO, SHA-256 (no script) e pontos inteiros.
 - **Estrutura:** PK única e não nula em todo modelo; FKs com `relationships`; domínios com `accepted_values`.

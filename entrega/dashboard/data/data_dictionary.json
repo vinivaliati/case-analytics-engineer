@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-25T17:45:09+00:00",
+  "generated_at": "2026-10-28T18:46:03+00:00",
   "source": "dbt manifest.json (descrições e testes de schema.yml) + esquema do DuckDB",
   "how_to_read": "Star schema agregado. Fatos 'agg_*' ligam às dimensões por *_key. Marts 'mart_*' respondem perguntas específicas da diretoria. Nenhuma tabela é linha a linha de cliente, conta ou pedido.",
   "project_vars": {},
@@ -761,6 +761,50 @@
         "customers_pct": {
           "type": "DOUBLE",
           "description": "% dos clientes que receberam o e-mail e usaram o Pix.",
+          "tests": [],
+          "meta": {}
+        }
+      },
+      "undocumented_columns": []
+    },
+    "mart_data_profile": {
+      "file": "mart_data_profile.parquet",
+      "layer": "analytics",
+      "description": "Perfil dos dados: as descobertas da exploração inicial como métricas reproduzíveis (fuso do CRM, pagamentos divididos, saldo por cliente, dia atípico). Grão: 1 linha por métrica. Só contagens agregadas.",
+      "meta": {
+        "grain": "1 linha por métrica",
+        "business_questions": [
+          "Quais problemas de qualidade os dados têm?",
+          "Como sabemos que o CRM está em UTC?",
+          "Por que o saldo e o nível de cartão são por cliente?"
+        ]
+      },
+      "rows": 14,
+      "model_tests": [
+        "expression_is_true",
+        "expression_is_true"
+      ],
+      "columns": {
+        "metric": {
+          "type": "VARCHAR",
+          "description": "PK. Nome da métrica.",
+          "tests": [
+            "not_null",
+            "unique"
+          ],
+          "meta": {}
+        },
+        "value": {
+          "type": "DOUBLE",
+          "description": "Valor da métrica (contagem ou %).",
+          "tests": [
+            "not_null"
+          ],
+          "meta": {}
+        },
+        "description": {
+          "type": "VARCHAR",
+          "description": "O que a métrica mede e por que importa.",
           "tests": [],
           "meta": {}
         }

@@ -269,8 +269,8 @@
     <div class="head" style="max-width:1500px"><span class="overline" data-anim="up">Arquitetura</span><h2 class="t-title" data-anim="up">Um comando reconstrói tudo a partir dos CSVs</h2></div>
     <div class="joined flow">
       <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">01 / confere</span></div><h3>MANIFESTO + SHA-256</h3><p class="t-body-sm">build.py confere os 9 CSVs (hash e contagem) antes de tudo. .gitattributes fixa LF para o hash bater em qualquer SO.</p></div>
-      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / modela</span></div><h3>dbt + DuckDB, Kimball</h3><p class="t-body-sm">staging → intermediate → core (dims e fatos) → analytics + serving. 242 testes no build.</p></div>
-      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">03 / publica</span></div><h3>Parquet + dicionário</h3><p class="t-body-sm">15 tabelas agregadas (300 KB) + data_dictionary.json gerado do dbt. Dashboard e agente leem só isso.</p></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">02 / modela</span></div><h3>dbt + DuckDB, Kimball</h3><p class="t-body-sm">staging → intermediate → core (dims e fatos) → analytics + serving. 210 testes no build.</p></div>
+      <div class="step" data-anim="seq"><div class="step-top"><span class="t-label">03 / publica</span></div><h3>Parquet + dicionário</h3><p class="t-body-sm">16 tabelas agregadas (300 KB) + data_dictionary.json gerado do dbt. Dashboard e agente leem só isso.</p></div>
     </div>
   </div>
 </section>
@@ -291,8 +291,8 @@
   <img class="wordmark" src="https://artifacts.brain3.com.br/share/z_pgQrSNRANa/raw/brandbook/visual-assets/Logos/logo_brain_0000_logo_branco.png" data-local="img/logo-branco.png" alt="Brain003">
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:36px;">
     <span class="overline" data-anim="up">Testes</span>
-    <div class="t-data-xl"><span data-anim="count" data-to="261">261</span><span class="unit"> testes a cada build</span></div>
-    <p class="t-sub" style="max-width:1500px; color:var(--mid)" data-anim="up">242 no dbt e 19 em Python. Além de chave e relacionamento, <span class="hl" data-anim="hl">testes que travam os números da apresentação.</span></p>
+    <div class="t-data-xl"><span data-anim="count" data-to="229">229</span><span class="unit"> testes a cada build</span></div>
+    <p class="t-sub" style="max-width:1500px; color:var(--mid)" data-anim="up">210 no dbt e 19 em Python. Além de chave e relacionamento, <span class="hl" data-anim="hl">testes que travam os números da apresentação.</span></p>
     <p class="t-body-sm" style="max-width:1500px" data-anim="up">Pontos debitados = pagos item a item · saldo = ledger cliente a cliente · agregados = fatos · Pix = R$ 0,019 · operador usa todos os status · dashboard sem filtro = marts · nenhum identificador de cliente publicado · agente não lê CSV nem escreve.</p>
   </div>
 </section>

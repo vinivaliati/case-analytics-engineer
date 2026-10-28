@@ -13,6 +13,7 @@ from google.genai import types
 from agente.agent import AnalystAgent
 from agente.config import Settings
 from agente.prompt import build_system_prompt
+from agente.config import DATA_DIR
 from agente.sql_tool import SqlTool
 
 
@@ -24,7 +25,8 @@ def tool() -> SqlTool:
 def test_carrega_todas_as_tabelas_publicadas(tool):
     assert "mart_goal_attainment_monthly" in tool.tables
     assert "dim_customer" not in tool.tables  # dado por cliente não é publicado
-    assert len(tool.tables) == 15
+    assert len(tool.tables) == len(list(DATA_DIR.glob("*.parquet")))
+    assert "mart_data_profile" in tool.tables
 
 
 @pytest.mark.parametrize(

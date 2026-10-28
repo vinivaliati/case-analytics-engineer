@@ -29,7 +29,7 @@ Pré-requisito: Python 3.12+ (testado em 3.14). Os CSVs ficam em `contexto/dados
 python -m venv .venv && .venv/Scripts/activate        # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 
-python entrega/scripts/build.py                        # 1) confere SHA-256, roda dbt (242 testes), exporta Parquet + dicionário
+python entrega/scripts/build.py                        # 1) confere SHA-256, roda dbt (210 testes), exporta Parquet + dicionário
 python -m pytest agente/tests entrega/dashboard/tests  # 2) 19 testes do agente e do dashboard
 python entrega/apresentacao/gerar_decks.py             # 3) regenera as apresentações a partir dos dados
 streamlit run entrega/dashboard/app.py                 # 4) dashboard + agente
