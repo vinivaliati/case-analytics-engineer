@@ -128,3 +128,9 @@ Uma entrada por sessão, da mais antiga para a mais recente. Formato e regras em
 - **O que a IA fez ou sugeriu:** incluiu em cada slide de achado (metas, waterfall, 12/01, CRM, operador, breakage, custo) uma faixa "Como chegamos aqui" com os dados (tabelas usadas), a regra aplicada e o teste que garante o número. Recriou o slide das camadas do modelo, com contagens por camada lidas do manifest do dbt, e o de dashboard e agente por dentro. Deck com 18 slides, conferido por screenshot e medição: corrigiu o espaçamento dos slides 5, 8 e 9. Atualizou o guia slide a slide: renumerou, corrigiu referências internas, incluiu as seções dos dois slides novos e a explicação da faixa técnica em cada achado.
 - **O que o candidato conferiu, corrigiu ou rejeitou:** rejeitou a versão sem a parte técnica e pediu a técnica justificando o negócio.
 - **Arquivos criados ou alterados:** entrega/apresentacao/gerar_decks.py, entrega/apresentacao/index.html, entrega/apresentacao/tecnica.html, AI_LOG.md.
+
+### 2026-10-29T11:19:14-03:00 · Claude Code (VS Code) · Claude Opus 5.5
+- **Pedido:** os slides 4 (descobertas), 7 (decisões técnicas) e 15 (regras revisáveis) estavam repetitivos; juntar os três em um só, bem dividido, no lugar do slide 4.
+- **O que a IA fez ou sugeriu:** criou um slide único com oito temas e três colunas numeradas (1 · o que vimos nos dados, 2 · o que decidimos, 3 · se o negócio preferir), com números lidos dos marts; removeu os slides 7 e 15. O deck passou a ter 16 slides, todos conferidos por medição. A primeira versão do slide passou da borda e foi enxugada. Atualizou o guia slide a slide: seção nova do slide 4, remoção das seções antigas, renumeração e referências internas.
+- **O que o candidato conferiu, corrigiu ou rejeitou:** apontou a repetição entre os três slides.
+- **Arquivos criados ou alterados:** entrega/apresentacao/gerar_decks.py, entrega/apresentacao/index.html, AI_LOG.md.

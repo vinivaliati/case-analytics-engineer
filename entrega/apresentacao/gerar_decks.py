@@ -264,32 +264,15 @@ data_rows = [
     ["relatorio_mensal_cliente", "Operador", br(manifest_rows["relatorio_mensal_cliente"]), "o relatório que o operador manda ao banco"],
 ]
 
-discovery_rows = [
-    ["Pedidos sem cliente", f"{br(prof['orders_user_id_null_pct'], 0)}% dos pedidos com <code>user_id</code> vazio", "o cliente vem do carrinho; ajuste de ingestão pedido"],
-    ["CRM em outro fuso", f"{br(prof['crm_events_3h_after_order'])} de {br(prof['crm_order_approved_events'])} eventos 'pedido aprovado' chegam exatamente 3h depois do pedido", "o CRM grava em UTC; convertemos para Brasília"],
-    ["CRM sem grupo de controle", f"{br(prof['crm_control_group_null_pct'], 0)}% dos eventos sem grupo de controle", "efeito de campanha só pode ser lido de forma descritiva"],
-    ["Pagamento dividido", f"{br(prof['items_paid_by_multiple_accounts'])} itens pagos por mais de uma conta; {br(prof['items_paid_by_mixed_card_classes'])} com níveis diferentes", "não é duplicata; o nível de cartão precisa ser o do cliente"],
-    ["Saldo é do cliente", f"{br(prof['accounts_negative_balance_last_month'])} contas negativas e {br(prof['customers_negative_balance_last_month'])} clientes negativos em set/26", "saldo e breakage medidos por cliente"],
-    ["Um dia fora da curva", f"{br(prof['atypical_day_air_items'])} resgates aéreos e {mi(prof['atypical_day_air_points'])} mi pontos em 12/01/26", "dia marcado como atípico; base 'antes do Pix' = fev a mai/26"],
-]
-
-decision_rows = [
-    ["Resgate efetivo = APROVADO, líquido de devoluções", f"cancelados não tiram pontos; em {br(prof['items_points_reconciled'])} itens os pontos debitados = pagos", "é a base que o contrato deveria usar; expôs o erro do operador"],
-    ["Metas pela definição do operador", "reproduz o relatório dele com até 1,5 p.p.", "comparável ao que o banco já recebe; a visão estrita mostra o risco"],
-    ["CRM convertido de UTC", f"{br(prof['crm_events_3h_after_order'])} de {br(prof['crm_order_approved_events'])} eventos confirmam +3h", "cada envio e clique cai no dia certo da análise de campanha"],
-    ["Nível de cartão = atual do cliente", f"{br(prof['accounts_negative_balance_last_month'])} contas negativas, 0 clientes; {br(prof['items_paid_by_mixed_card_classes'])} itens mistos", "corte por nível sem dupla contagem"],
-    ["Breakage = expirado ÷ emitido, por safra", "definição de mercado (IFRS 15); Multiplus 21% a 24%", "número comparável ao mercado e à meta de 20%"],
-    ["12/01 marcado como atípico", f"{br(prof['atypical_day_air_items'])} resgates num dia, 24h uniformes, sem campanha", "a base 'antes do Pix' não fica inflada por aéreas"],
-    ["Regras em tabelas de referência", "metas e eventos ficam fora do SQL", "o negócio muda a regra sem mexer no código"],
-]
-
-open_rows = [
-    ["Nível = atual do cliente", "nível da conta que pagou", "só muda cortes por nível; a alternativa já está pronta"],
-    ["Metas pela definição do operador", "visão estrita (varejo só produto)", f"varejo nunca passou de {br(strict_max, 1)}%: a meta nunca teria sido cumprida"],
-    ["Pix dentro do denominador", "Pix fora do denominador", f"set/26: varejo {br(ex_pix_var, 1)}% e aéreas {br(ex_pix_air, 1)}%"],
-    ["Resgate efetivo líquido", "aprovado bruto ou + estornados", "no máximo 0,11 p.p.; nenhum mês muda de status de meta"],
-    ["Base antes do Pix = fev a mai/26", "incluir jan/26", f"jan tem 12/01: aéreas {br(jan_air, 1)}% ({br(jan_air_ex, 1)}% sem o dia)"],
-    ["Custo ≈ valor do produto − dinheiro do cliente", "custo real dos parceiros", "varejo fica mais barato; o Pix segue sendo o mais caro"],
+rules_rows = [
+    ["Clientes e níveis", f"{br(prof['items_paid_by_multiple_accounts'])} itens pagos por 2+ contas; {br(prof['accounts_negative_balance_last_month'])} contas negativas, {br(prof['customers_negative_balance_last_month'])} clientes", "nível atual do cliente; saldo e breakage por cliente", "nível da conta que pagou: só muda cortes por nível"],
+    ["Resgate efetivo", f"cancelados não tiram pontos; {br(prof['items_points_reconciled'])} itens com débito = pago", "APROVADO, líquido de devoluções", "bruto ou + estornados: até 0,11 p.p., nenhuma meta muda"],
+    ["Metas", "reproduzimos o operador com até 1,5 p.p.", "definição do operador (comparável)", f"estrita: varejo máx. {br(strict_max, 1)}% · Pix fora: varejo {br(ex_pix_var, 1)}%"],
+    ["12/01/2026", f"{br(prof['atypical_day_air_items'])} resgates aéreos ({mi(prof['atypical_day_air_points'])} mi pts), sem campanha", "dia atípico; base antes do Pix = fev a mai/26", f"incluir jan/26: aéreas {br(jan_air, 1)}% ({br(jan_air_ex, 1)}% sem o dia)"],
+    ["CRM", f"{br(prof['crm_events_3h_after_order'])} de {br(prof['crm_order_approved_events'])} eventos +3h; {br(prof['crm_control_group_null_pct'], 0)}% sem grupo de controle", "UTC → Brasília; leitura descritiva", "pedir fuso documentado e teste A/B"],
+    ["Breakage", f"'expiração ÷ resgate' = {br(etr.min(), 0)} a {br(etr.max(), 0)}% (o \"40%\")", "vencido ÷ emitido, por safra (IFRS 15)", "alinhar a métrica oficial com a diretoria"],
+    ["Custo por ponto", "preço do banco por ponto não está nos dados", "valor do produto − dinheiro do cliente", "custo real dos parceiros: Pix segue o mais caro"],
+    ["Pedidos", f"{br(prof['orders_user_id_null_pct'], 0)}% com <code>user_id</code> vazio", "cliente vem do carrinho", "corrigir na ingestão"],
 ]
 
 question_rows = [
@@ -347,13 +330,13 @@ board = f"""
   </div>
 </section>
 
-<!-- 04 · Os dados e o que revelaram -->
+<!-- 04 · Descobertas, decisões e alternativas -->
 <section class="slide" data-section="O que recebemos" data-template="dashboard" data-tagline>
   {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
-    <div class="head" style="max-width:1700px"><span class="overline" data-anim="up">9 arquivos, 5 sistemas, nenhum dicionário de dados</span><h2 class="t-title" data-anim="up" style="font-size:52px">Antes de responder, os dados precisaram ser entendidos: <span class="hl" data-anim="hl">cada descoberta virou uma decisão</span></h2></div>
-    {table_html("1fr 2fr 1.7fr", ["Descoberta", "Evidência nos dados", "O que decidimos"], discovery_rows, 22)}
-    {source(f"mart_data_profile (recalculado a cada build); contagens dos arquivos conferidas contra o MANIFESTO ({br(sum(manifest_rows.values()))} linhas no total)")}
+  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:22px;">
+    <div class="head" style="max-width:1750px"><span class="overline" data-anim="up">9 arquivos, 5 sistemas, nenhum dicionário de dados</span><h2 class="t-title" data-anim="up" style="font-size:44px">Cada descoberta virou uma decisão, <span class="hl" data-anim="hl">e pode ser revista</span></h2></div>
+    {table_html("0.8fr 1.7fr 1.35fr 1.6fr", ["Tema", "1 · O que vimos nos dados", "2 · O que decidimos", "3 · Se o negócio preferir"], rules_rows, 18)}
+    {meaning("nenhuma alternativa inverte a recomendação; trocar uma regra é ajustar uma tabela de referência.")}
   </div>
 </section>
 
@@ -391,16 +374,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 07 · Decisões técnicas -->
-<section class="slide" data-section="O que construímos" data-template="dashboard" data-tagline>
-  {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
-    <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">Decisões técnicas, em linguagem de negócio</span><h2 class="t-title" data-anim="up" style="font-size:54px">Cada escolha tem uma evidência <span class="hl" data-anim="hl">e um motivo de negócio</span></h2></div>
-    {table_html("1.25fr 1.6fr 1.6fr", ["Decisão", "Por quê (evidência)", "O que garante ao negócio"], decision_rows, 21)}
-  </div>
-</section>
-
-<!-- 08 · Metas -->
+<!-- 07 · Metas -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
@@ -422,7 +396,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 09 · Waterfall -->
+<!-- 08 · Waterfall -->
 <section class="slide" data-section="O que os dados mostram" data-template="waterfall" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
@@ -442,7 +416,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 10 · 12/01 -->
+<!-- 09 · 12/01 -->
 <section class="slide" data-section="O que os dados mostram" data-template="big-number" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:26px;">
@@ -458,7 +432,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 11 · CRM -->
+<!-- 10 · CRM -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
@@ -480,7 +454,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 12 · Operador -->
+<!-- 11 · Operador -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
@@ -502,7 +476,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 13 · Breakage -->
+<!-- 12 · Breakage -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
@@ -524,7 +498,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 14 · Saúde financeira -->
+<!-- 13 · Saúde financeira -->
 <section class="slide" data-section="O que os dados mostram" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:26px; padding-top:100px;">
@@ -550,17 +524,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 15 · Regras revisáveis -->
-<section class="slide" data-section="Em aberto" data-template="dashboard" data-tagline>
-  {WM}
-  <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
-    <div class="head" style="max-width:1650px"><span class="overline" data-anim="up">Regras revisáveis</span><h2 class="t-title" data-anim="up" style="font-size:54px">As regras estão abertas a ajuste, <span class="hl" data-anim="hl">e o efeito de cada troca já foi medido</span></h2></div>
-    {table_html("1.3fr 1.1fr 1.8fr", ["Regra adotada", "Alternativa", "Se trocar, o que muda"], open_rows, 22)}
-    {meaning("nenhuma alternativa inverte a recomendação. Tecnicamente, cada troca é uma mudança numa tabela de referência ou num join, já preparada no modelo.")}
-  </div>
-</section>
-
-<!-- 16 · Perguntas pendentes -->
+<!-- 14 · Perguntas pendentes -->
 <section class="slide" data-section="Em aberto" data-template="dashboard" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:center; gap:32px;">
@@ -569,7 +533,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 17 · Dashboard e agente -->
+<!-- 15 · Dashboard e agente -->
 <section class="slide" data-section="Acompanhamento" data-template="3-passos" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:30px; padding-top:110px;">
@@ -584,7 +548,7 @@ board = f"""
   </div>
 </section>
 
-<!-- 18 · Recomendação e próximos passos -->
+<!-- 16 · Recomendação e próximos passos -->
 <section class="slide" data-section="Recomendação" data-template="sumario-executivo" data-tagline>
   {WM}
   <div class="pad" style="display:flex; flex-direction:column; justify-content:flex-start; gap:20px; padding-top:100px;">
