@@ -1,0 +1,320 @@
+version: 2
+
+models:
+  - name: stg_cartoes__cards
+    description: "Contas de cartão. Grão: 1 linha por account_id. Um user_id pode ter várias contas (12.000 usuários, 16.168 contas na v1)."
+    columns:
+      - name: account_id
+        description: Identificador da conta do cartão. Chave do ledger e de redeemed_points.
+        tests: [unique, not_null]
+      - name: user_id
+        description: Identificador do cliente.
+        tests: [not_null]
+      - name: card_class
+        description: "Nível do cartão, do mais simples ao mais alto: Essencial, Gold, Platinum, Platinum Elo, Infinite, Black."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [Essencial, Gold, Platinum, Platinum Elo, Infinite, Black]
+      - name: card_brand
+        description: Bandeira do cartão (origem card_flag).
+        tests:
+          - accepted_values:
+              arguments:
+                values: [VISA, MASTERCARD, ELO]
+      - name: card_created_at
+        description: Criação da conta, no fuso local (America/Sao_Paulo).
+        tests: [not_null]
+      - name: is_most_recent
+        description: Indica a conta mais recente do usuário, segundo a origem.
+        tests: [not_null]
+
+  - name: stg_pedidos__carts
+    description: "Carrinhos. Grão: 1 linha por cart_id. É a única fonte do user_id de um pedido."
+    columns:
+      - name: cart_id
+        description: Identificador do carrinho.
+        tests: [unique, not_null]
+      - name: user_id
+        description: Cliente dono do carrinho.
+        tests: [not_null]
+      - name: sales_channel
+        description: Canal da compra (origem channel).
+        tests:
+          - accepted_values:
+              arguments:
+                values: [APP, WEB]
+
+  - name: stg_pedidos__orders
+    description: "Pedidos. Grão: 1 linha por order_id."
+    columns:
+      - name: order_id
+        description: Identificador do pedido.
+        tests: [unique, not_null]
+      - name: cart_id
+        description: Carrinho de origem do pedido.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_pedidos__carts')
+                field: cart_id
+      - name: user_id
+        description: "100% vazio na origem (v1). Não usar: o usuário vem de stg_pedidos__carts.user_id. AJUSTE DE INGESTÃO pendente (ver docs/notas_para_readme.md)."
+        config:
+          meta:
+            ingestion_issue: "Coluna 100% nula na extração; recuperar via cart_id -> carts.user_id."
+      - name: order_created_at
+        description: Criação do pedido, no fuso local.
+        tests: [not_null]
+      - name: order_status
+        description: Status atual do pedido.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [APROVADO, CANCELADO, FINALIZADO_COM_SUCESSO, ESTORNADO, INVALIDO, AGUARDANDO_CONFIRMACAO]
+      - name: order_status_updated_at
+        description: Última mudança de status, no fuso local.
+        tests: [not_null]
+
+  - name: stg_pedidos__order_items
+    description: "Itens de pedido. Grão: 1 linha por order_item_id."
+    columns:
+      - name: order_item_id
+        description: Identificador do item.
+        tests: [unique, not_null]
+      - name: order_id
+        description: Pedido do item.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_pedidos__orders')
+                field: order_id
+      - name: item_created_at
+        description: Criação do item, no fuso local.
+        tests: [not_null]
+      - name: item_status
+        description: Status do item.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [APROVADO, CANCELADO, FINALIZADO_COM_SUCESSO, ESTORNADO, INVALIDO, AGUARDANDO_CONFIRMACAO]
+      - name: product_type
+        description: Tipo do produto resgatado.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [PASSAGEM, PRODUTO, TRANSFERENCIA, COMPRA_PONTOS]
+      - name: supplier_name
+        description: "Fornecedor. 'Pix Pontua+' identifica o resgate via Pix."
+        tests: [not_null]
+      - name: supplier_responsible
+        description: Fornecedor responsável (difere de supplier_name em revendas, ex. Casa&Cia via MegaMagazine).
+        tests: [not_null]
+      - name: category_macro
+        description: Categoria macro informada pela origem. Não é necessariamente a classificação das metas.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [Aereas, Varejo, Cashback]
+      - name: paid_points
+        description: Pontos pagos no item. Vazio em 520 itens (todos COMPRA_PONTOS).
+      - name: paid_brl
+        description: Parte paga em dinheiro, em R$ (origem paid_currency).
+        tests: [not_null]
+      - name: product_value_brl
+        description: Valor do produto em R$ (origem product_value).
+        tests: [not_null]
+      - name: refunded_points
+        description: Pontos devolvidos no item.
+        tests: [not_null]
+      - name: quantity
+        description: Quantidade. Sempre 1 na v1.
+        tests: [not_null]
+
+  - name: stg_pedidos__redeemed_points
+    description: "Movimentos de pontos por item de pedido (RESGATE, RESERVA, CANCELADO_RESERVA). Grão: 1 linha por combinação distinta de todas as colunas (sem chave natural)."
+    columns:
+      - name: redeemed_point_key
+        description: Chave surrogate (hash de todas as colunas).
+        tests: [unique, not_null]
+      - name: order_item_id
+        description: Item de pedido do movimento.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_pedidos__order_items')
+                field: order_item_id
+      - name: account_id
+        description: Conta debitada ou creditada.
+        tests: [not_null]
+      - name: movement_type
+        description: Tipo do movimento.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [RESGATE, RESERVA, CANCELADO_RESERVA]
+      - name: points
+        description: Pontos com sinal (negativo = saída do saldo).
+        tests: [not_null]
+
+  - name: stg_pontos__points_ledger
+    description: "Ledger de pontos. Grão: 1 linha por movement_id."
+    columns:
+      - name: movement_id
+        description: Identificador do movimento.
+        tests: [unique, not_null]
+      - name: user_id
+        description: Cliente.
+        tests: [not_null]
+      - name: account_id
+        description: Conta do cartão.
+        tests: [not_null]
+      - name: operation_code
+        description: Tipo de operação.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_pontos__operations')
+                field: operation_code
+      - name: points
+        description: Pontos com sinal.
+        tests: [not_null]
+      - name: movement_at
+        description: Data e hora do movimento, no fuso local.
+        tests: [not_null]
+      - name: valid_until
+        description: Validade dos pontos creditados. Vazio em 38.595 movimentos (a investigar por operação).
+
+  - name: stg_pontos__operations
+    description: "Cadastro de operações do ledger. Grão: 1 linha por operation_code."
+    columns:
+      - name: operation_code
+        description: Código da operação.
+        tests: [unique, not_null]
+      - name: operation_name
+        description: Nome da operação.
+        tests: [not_null]
+      - name: direction
+        description: CREDIT ou DEBIT.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [CREDIT, DEBIT]
+
+  - name: stg_crm__events
+    description: "Eventos do CRM. Grão: 1 linha por combinação distinta de todas as colunas (sem chave natural)."
+    columns:
+      - name: crm_event_key
+        description: Chave surrogate (hash de todas as colunas).
+        tests: [unique, not_null]
+      - name: event_at
+        description: "Momento do evento no fuso local. Origem em UTC: confirmado porque 'Order Approved' = orders.created_at + 3h em 17.385 de 17.494 eventos."
+        tests: [not_null]
+      - name: event_at_utc
+        description: Momento do evento como veio da origem (UTC).
+        tests: [not_null]
+      - name: user_id
+        description: Cliente. Vazio em 20.252 eventos.
+      - name: device_id
+        description: Dispositivo.
+        tests: [not_null]
+      - name: event_name
+        description: Tipo do evento.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [Notification Sent, Notification Viewed, Push Impressions, Order Approved, Notification Clicked, Notification Failed]
+      - name: campaign_type
+        description: Canal da campanha. Vazio só em Order Approved.
+      - name: campaign_id
+        description: Identificador da campanha.
+      - name: control_group
+        description: "100% vazio na v1: não existe grupo de controle para medir efeito causal."
+      - name: event_properties
+        description: Payload JSON do evento.
+
+  - name: stg_operador__monthly_report
+    description: "Relatório do operador ao banco. Grão: 1 linha por mês. Números autodeclarados, usados só para reconciliação."
+    columns:
+      - name: report_month
+        description: Primeiro dia do mês de referência.
+        tests: [unique, not_null]
+      - name: aereas_pct
+        description: "% de pontos resgatados em aéreas, segundo o operador."
+      - name: varejo_pct
+        description: "% de pontos resgatados em varejo, segundo o operador."
+      - name: pix_pct
+        description: "% de pontos resgatados via Pix, segundo o operador. Vazio antes de mai/2026."
+      - name: pix_brl
+        description: R$ pagos via Pix, segundo o operador.
+      - name: pix_points
+        description: Pontos resgatados via Pix, segundo o operador.
+      - name: pix_transactions
+        description: Transações Pix, segundo o operador.
+      - name: emails_sent
+        description: E-mails enviados, segundo o operador.
+      - name: push_sent
+        description: Pushes enviados, segundo o operador. Vazio de jan a mar/2026.
+
+unit_tests:
+  - name: crm_event_at_converte_utc_para_local
+    description: event_ts em UTC deve virar horário de Brasília (-3h).
+    model: stg_crm__events
+    given:
+      - input: source('crm', 'crm_events')
+        format: sql
+        rows: |
+          select '2026-05-27 12:00:00' as event_ts, '1' as user_id, 'D1' as device_id, 'Order Approved' as event_name, '' as campaign_type, '' as campaign_id, '' as control_group, '{}' as event_properties
+    expect:
+      rows:
+        - {event_at: "2026-05-27 09:00:00", event_at_utc: "2026-05-27 12:00:00", campaign_type: null}
+
+  - name: crm_dedup_remove_so_linhas_identicas
+    description: Linhas idênticas viram uma; linhas que diferem só no payload continuam separadas.
+    model: stg_crm__events
+    given:
+      - input: source('crm', 'crm_events')
+        format: sql
+        rows: |
+          select '2026-06-01 10:00:00' as event_ts, '1' as user_id, 'D1' as device_id, 'Notification Sent' as event_name, 'Email' as campaign_type, 'C1' as campaign_id, '' as control_group, '{"a": 1}' as event_properties
+          union all
+          select '2026-06-01 10:00:00' as event_ts, '1' as user_id, 'D1' as device_id, 'Notification Sent' as event_name, 'Email' as campaign_type, 'C1' as campaign_id, '' as control_group, '{"a": 1}' as event_properties
+          union all
+          select '2026-06-01 10:00:00' as event_ts, '1' as user_id, 'D1' as device_id, 'Notification Sent' as event_name, 'Email' as campaign_type, 'C1' as campaign_id, '' as control_group, '{"a": 2}' as event_properties
+    expect:
+      rows:
+        - {event_properties: '{"a": 1}'}
+        - {event_properties: '{"a": 2}'}
+
+  - name: orders_dedup_mantem_status_mais_recente
+    description: Se um order_id aparecer duas vezes, fica o status atualizado por último; offset -03:00 vira horário local.
+    model: stg_pedidos__orders
+    given:
+      - input: source('pedidos', 'orders')
+        format: sql
+        rows: |
+          select '1' as order_id, '10' as cart_id, '' as user_id, '2026-06-01 10:00:00-03:00' as created_at, 'AGUARDANDO_CONFIRMACAO' as status, '2026-06-01 10:05:00-03:00' as status_updated_at
+          union all
+          select '1' as order_id, '10' as cart_id, '' as user_id, '2026-06-01 10:00:00-03:00' as created_at, 'APROVADO' as status, '2026-06-01 12:00:00-03:00' as status_updated_at
+    expect:
+      rows:
+        - {order_id: "1", order_status: "APROVADO", order_created_at: "2026-06-01 10:00:00", user_id: null}
+
+  - name: order_items_tipa_pontos_e_valores
+    description: Pontos vêm como '6776' ou vazio; valores em R$ viram decimal.
+    model: stg_pedidos__order_items
+    given:
+      - input: source('pedidos', 'order_items')
+        format: sql
+        rows: |
+          select '1' as order_item_id, '1' as order_id, '2026-06-01 10:00:00-03:00' as created_at, 'APROVADO' as status, 'PRODUTO' as product_type, 'X' as supplier_name, 'X' as supplier_responsible, 'Varejo' as category_macro, '6776' as paid_points, '191.23' as paid_currency, '285.42' as product_value, '0' as refunded_points, '1' as quantity
+          union all
+          select '2' as order_item_id, '1' as order_id, '2026-06-01 10:00:00-03:00' as created_at, 'APROVADO' as status, 'COMPRA_PONTOS' as product_type, 'X' as supplier_name, 'X' as supplier_responsible, 'Cashback' as category_macro, '' as paid_points, '50.00' as paid_currency, '50.00' as product_value, '0' as refunded_points, '1' as quantity
+    expect:
+      rows:
+        - {order_item_id: "1", paid_points: 6776, paid_brl: 191.23, product_value_brl: 285.42}
+        - {order_item_id: "2", paid_points: null, paid_brl: 50.00, product_value_brl: 50.00}

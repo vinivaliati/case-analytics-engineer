@@ -1,0 +1,248 @@
+version: 2
+
+# Camada publicada (tag 'published'): star schema AGREGADO consumido pelo dashboard, pelo agente e por uma futura ferramenta de BI.
+# Nada aqui é linha a linha de cliente, conta ou pedido.
+
+models:
+  - name: dim_month
+    description: "Meses com dados. Grão: 1 linha por mês até set/2026. Conformada com dim_date."
+    config:
+      meta:
+        grain: "1 linha por mês"
+        business_questions: ["Em que fase do Pix está cada mês?", "Quais meses têm eventos atípicos?"]
+    columns:
+      - name: month_date_key
+        description: "PK. Primeiro dia do mês como inteiro yyyymmdd (ex.: 20260601). FK usada por todos os agregados."
+        tests: [unique, not_null]
+      - name: month_start
+        description: Primeiro dia do mês.
+      - name: year_month
+        description: "Mês no formato yyyy-mm."
+      - name: year
+        description: Ano.
+      - name: quarter
+        description: Trimestre (1 a 4).
+      - name: month
+        description: Mês (1 a 12).
+      - name: pix_phase
+        description: "antes_do_pix, mes_do_lancamento (mai/2026) ou depois_do_pix."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [antes_do_pix, mes_do_lancamento, depois_do_pix]
+      - name: is_in_pre_pix_baseline
+        description: "Mês dentro da linha de base antes do Pix (fev a mai/2026)."
+      - name: has_atypical_day
+        description: "Mês com dia atípico (jan/2026: pico de 12/01)."
+      - name: month_events
+        description: Eventos de negócio do mês.
+
+  - name: dim_card_class
+    description: "Níveis de cartão. Grão: 1 linha por nível, mais '-1' (desconhecido)."
+    config:
+      meta:
+        grain: "1 linha por nível de cartão"
+        business_questions: ["Qual a ordem dos níveis?"]
+    columns:
+      - name: card_class_key
+        description: "PK. Hash do nome do nível."
+        tests: [unique, not_null]
+      - name: card_class
+        description: "Essencial, Gold, Platinum, Platinum Elo, Infinite, Black ou Desconhecido."
+      - name: card_class_rank
+        description: "1 = mais simples ... 6 = mais alto."
+
+  - name: agg_redemptions_monthly
+    description: >
+      Resgates agregados. Grão: mês x produto x nível de cartão (atual do cliente) x canal x status do item.
+      Use net_redeemed_points com is_effective_redemption = true para as metas.
+    config:
+      meta:
+        grain: "mês x product_key x card_class_key x sales_channel x item_status"
+        business_questions:
+          - "Quantos pontos foram resgatados por categoria, fornecedor, nível ou canal?"
+          - "Qual a participação de aéreas, varejo e Pix nos resgates?"
+          - "Quanto custou cada modalidade em R$?"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [month_date_key, product_key, card_class_key, sales_channel, item_status, is_effective_redemption]
+    columns:
+      - name: redemption_agg_key
+        description: "PK. Hash das colunas do grão."
+        tests: [unique, not_null]
+      - name: month_date_key
+        description: "FK para dim_month."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_date_key
+      - name: product_key
+        description: "FK para dim_product (fornecedor, tipo, categoria de meta)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: card_class_key
+        description: "FK para dim_card_class. Nível ATUAL do cliente (decisão documentada)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_card_class')
+                field: card_class_key
+      - name: sales_channel
+        description: APP ou WEB.
+      - name: item_status
+        description: Status do item.
+      - name: is_effective_redemption
+        description: "Resgate efetivo: APROVADO e não é compra de pontos."
+      - name: items_count
+        description: Quantidade de itens (aditiva).
+      - name: net_redeemed_points
+        description: "MÉTRICA OFICIAL de pontos resgatados (líquida de devoluções). Zero quando não é resgate efetivo."
+      - name: points_debited
+        description: Pontos debitados em redeemed_points (bruto).
+      - name: paid_points
+        description: Pontos informados no pedido (inclui itens não pagos).
+      - name: refunded_points
+        description: Pontos devolvidos.
+      - name: product_value_brl
+        description: "Valor dos produtos em R$. No Pix, é o dinheiro creditado ao cliente."
+      - name: customer_cash_brl
+        description: Parte paga pelo cliente em dinheiro (R$).
+
+  - name: agg_points_movements_monthly
+    description: "Movimentos do ledger agregados. Grão: mês x operação x nível de cartão (atual do cliente)."
+    config:
+      meta:
+        grain: "mês x operation_key x card_class_key"
+        business_questions:
+          - "Quantos pontos foram creditados, resgatados, estornados e expirados por mês?"
+          - "Quanto do volume é de saldo migrado?"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [month_date_key, operation_key, card_class_key]
+    columns:
+      - name: points_movement_agg_key
+        description: "PK. Hash das colunas do grão."
+        tests: [unique, not_null]
+      - name: month_date_key
+        description: "FK para dim_month."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_date_key
+      - name: operation_key
+        description: "FK para dim_operation."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_operation')
+                field: operation_key
+      - name: card_class_key
+        description: "FK para dim_card_class."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_card_class')
+                field: card_class_key
+      - name: movements_count
+        description: Quantidade de movimentos no ledger.
+      - name: points
+        description: Soma com sinal (+ crédito, - débito).
+      - name: credit_points
+        description: Parte positiva.
+      - name: debit_points
+        description: Parte negativa, em módulo.
+
+  - name: agg_points_balance_monthly
+    description: "Saldo de pontos agregado. Grão: mês x nível de cartão (atual do cliente). Saldo é semi-aditivo: some entre níveis, nunca entre meses."
+    config:
+      meta:
+        grain: "mês x card_class_key"
+        business_questions:
+          - "Qual o saldo de pontos em aberto (passivo) por mês e nível?"
+          - "Quantos clientes têm saldo?"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [month_date_key, card_class_key]
+    columns:
+      - name: points_balance_agg_key
+        description: "PK. Hash das colunas do grão."
+        tests: [unique, not_null]
+      - name: month_date_key
+        description: "FK para dim_month."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_date_key
+      - name: card_class_key
+        description: "FK para dim_card_class."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_card_class')
+                field: card_class_key
+      - name: customers_in_program
+        description: Clientes com algum movimento até o mês. Aditiva entre níveis no mesmo mês.
+      - name: customers_with_balance
+        description: Clientes com saldo positivo ao fim do mês.
+      - name: closing_balance_points
+        description: Saldo ao fim do mês (semi-aditivo).
+      - name: credited_points
+        description: Pontos creditados no mês (programa novo).
+      - name: migrated_points
+        description: Saldo migrado creditado no mês.
+      - name: redeemed_points
+        description: Pontos resgatados no mês (débito do ledger, em módulo).
+      - name: order_refund_points
+        description: Pontos devolvidos por estorno de pedido no mês.
+      - name: expired_points
+        description: Pontos do programa novo expirados no mês.
+      - name: expired_migrated_points
+        description: Pontos migrados expirados no mês.
+
+  - name: agg_crm_events_monthly
+    description: "Eventos de CRM agregados. Grão: mês x campanha x tipo de evento x canal."
+    config:
+      meta:
+        grain: "mês x campaign_key x event_name x campaign_type"
+        business_questions:
+          - "Quantos e-mails e pushes foram enviados, vistos e clicados por mês e campanha?"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [month_date_key, campaign_key, event_name, campaign_type]
+    columns:
+      - name: crm_event_agg_key
+        description: "PK. Hash das colunas do grão."
+        tests: [unique, not_null]
+      - name: month_date_key
+        description: "FK para dim_month (mês no fuso local)."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_date_key
+      - name: campaign_key
+        description: "FK para dim_campaign ('-1' = sem campanha)."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_campaign')
+                field: campaign_key
+      - name: event_name
+        description: "Notification Sent, Viewed, Clicked, Failed, Push Impressions ou Order Approved."
+      - name: campaign_type
+        description: "Canal (Email, Push, InApp...). 'Sem canal' em Order Approved."
+      - name: events_count
+        description: Quantidade de eventos.

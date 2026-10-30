@@ -1,0 +1,8 @@
+# Sem segredo: banco DuckDB local, gerado do zero a partir de ../../contexto/dados.
+pontua:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: pontua.duckdb
+      threads: 4

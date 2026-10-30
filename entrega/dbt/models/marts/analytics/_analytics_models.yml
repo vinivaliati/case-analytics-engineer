@@ -1,0 +1,295 @@
+version: 2
+
+# Marts analíticos (tag 'published'): cada um responde uma pergunta da diretoria e trava o achado com testes.
+
+models:
+  - name: mart_goal_attainment_monthly
+    description: >
+      Metas contratuais por mês. Grão: 1 linha por mês. Base: resgates efetivos (APROVADO, líquido de devoluções),
+      classificados pela tabela de referência goal_categories. Metas: aéreas >= 50% e varejo >= 20% dos pontos resgatados.
+    config:
+      meta:
+        grain: "1 linha por mês"
+        business_questions:
+          - "As metas de aéreas (>= 50%) e varejo (>= 20%) estão sendo cumpridas?"
+          - "Como as metas ficariam sem o Pix no denominador?"
+          - "Nossos números batem com o relatório do operador?"
+    tests:
+      # A visão contrato reproduz o relatório do operador com até 1,5 p.p. de diferença.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "abs(aereas_pct_diff_vs_operator) <= 1.5 and abs(varejo_pct_diff_vs_operator) <= 1.5"
+          config:
+            where: "operator_aereas_pct is not null"
+    columns:
+      - name: month_start
+        description: "PK. Primeiro dia do mês."
+        tests: [unique, not_null]
+      - name: redeemed_points
+        description: Pontos resgatados no mês (denominador das metas, inclui Pix).
+      - name: aereas_points
+        description: Pontos resgatados em aéreas (visão contrato).
+      - name: varejo_points
+        description: Pontos resgatados em varejo (visão contrato).
+      - name: pix_points
+        description: Pontos resgatados via Pix.
+      - name: aereas_pct
+        description: "% de aéreas na visão contrato (definição do operador)."
+      - name: varejo_pct
+        description: "% de varejo na visão contrato (inclui transferências a parceiros e Decola Viagens)."
+      - name: pix_pct
+        description: "% de Pix nos pontos resgatados."
+      - name: varejo_strict_pct
+        description: "% de varejo na visão estrita (só produto, sem transferências e sem agência de viagens). Sensibilidade."
+      - name: aereas_pct_ex_pix
+        description: "% de aéreas se o Pix ficasse fora do denominador. Cenário para discutir o contrato, não é a regra atual."
+      - name: varejo_pct_ex_pix
+        description: "% de varejo se o Pix ficasse fora do denominador. Cenário."
+      - name: aereas_pct_ex_atypical
+        description: "% de aéreas sem os dias atípicos (calendar_events). Relevante só em jan/2026."
+      - name: meets_aereas_goal
+        description: "Meta de aéreas (>= 50%) cumprida na visão contrato."
+      - name: meets_varejo_goal
+        description: "Meta de varejo (>= 20%) cumprida na visão contrato."
+      - name: operator_aereas_pct
+        description: "% de aéreas segundo o relatório do operador."
+      - name: operator_varejo_pct
+        description: "% de varejo segundo o relatório do operador."
+      - name: operator_pix_pct
+        description: "% de Pix segundo o relatório do operador (usa pontos de todos os status)."
+      - name: aereas_pct_diff_vs_operator
+        description: "Nosso % de aéreas menos o do operador, em p.p."
+      - name: varejo_pct_diff_vs_operator
+        description: "Nosso % de varejo menos o do operador, em p.p."
+
+  - name: mart_pix_reconciliation_monthly
+    description: >
+      Reconciliação do Pix com o relatório do operador. Grão: 1 linha por mês com Pix.
+      Testa a afirmação "o Pix sai a ~R$ 0,016 por ponto": o operador divide R$ pagos (≈ aprovados) por pontos de TODOS os status.
+    config:
+      meta:
+        grain: "1 linha por mês com Pix"
+        business_questions:
+          - "Quanto o Pix custa por ponto?"
+          - "Por que o relatório do operador mostra ~R$ 0,016 por ponto?"
+    tests:
+      # O custo real do Pix é R$ 0,019 por ponto em todos os meses.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "effective_brl_per_point between 0.01895 and 0.01905"
+    columns:
+      - name: month_start
+        description: "PK. Primeiro dia do mês."
+        tests: [unique, not_null]
+      - name: effective_transactions
+        description: Resgates Pix efetivos (APROVADO) no mês.
+      - name: effective_points
+        description: Pontos dos resgates Pix efetivos, líquidos de devoluções.
+      - name: effective_brl
+        description: R$ creditados aos clientes nos resgates Pix efetivos.
+      - name: effective_brl_per_point
+        description: "R$ creditados por ponto nos resgates efetivos. É o custo real do Pix por ponto."
+      - name: all_status_transactions
+        description: Itens Pix de todos os status (inclui não pagos).
+      - name: all_status_points
+        description: Pontos de todos os itens Pix, inclusive cancelados, inválidos, estornados e aguardando.
+      - name: non_effective_transactions
+        description: Itens Pix que não viraram resgate.
+      - name: non_effective_points
+        description: Pontos de itens Pix que não viraram resgate (não foram pagos).
+      - name: operator_transactions
+        description: Transações Pix segundo o operador.
+      - name: operator_points
+        description: Pontos Pix segundo o operador.
+      - name: operator_brl
+        description: R$ Pix segundo o operador.
+      - name: operator_brl_per_point
+        description: "R$ / pontos do relatório do operador (~0,016)."
+      - name: operator_transactions_match_all_status
+        description: "As transações do operador batem exatamente com os itens Pix de todos os status."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [true]
+                quote: false
+      - name: operator_points_match_all_status
+        description: "Os pontos do operador batem exatamente com os pontos Pix de todos os status."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [true]
+                quote: false
+      - name: operator_brl_diff_vs_effective
+        description: "R$ do operador menos R$ dos resgates efetivos."
+      - name: operator_brl_diff_vs_effective_pct
+        description: "Diferença entre o R$ do operador e o R$ dos resgates efetivos, em %. Entre -0,2% e -0,7%; sem regra que explique (pergunta ao operador)."
+
+  - name: mart_points_flow_monthly
+    description: >
+      Fluxo de pontos e breakage. Grão: 1 linha por mês. Breakage segue a definição de mercado (expirados / emitidos, por origem);
+      ver docs/benchmark_breakage.md.
+    config:
+      meta:
+        grain: "1 linha por mês"
+        business_questions:
+          - "Qual é o breakage do programa?"
+          - "De onde vem o número de 40% de breakage?"
+          - "Qual o saldo de pontos em aberto?"
+    columns:
+      - name: month_start
+        description: "PK. Primeiro dia do mês."
+        tests: [unique, not_null]
+      - name: credited_points
+        description: Pontos creditados pelo programa novo no mês.
+      - name: migrated_points
+        description: Saldo migrado do programa anterior creditado no mês.
+      - name: redeemed_points
+        description: Pontos debitados por resgate no mês (bruto, em módulo).
+      - name: order_refund_points
+        description: Pontos devolvidos por estorno de pedido.
+      - name: expired_points
+        description: Pontos do programa novo expirados no mês. Zero até a extração.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0]
+                quote: false
+      - name: expired_migrated_points
+        description: Pontos migrados expirados no mês.
+      - name: total_expired_points
+        description: Total de pontos expirados no mês (novo + migrado).
+      - name: opening_balance_points
+        description: Saldo em aberto no início do mês.
+      - name: closing_balance_points
+        description: Saldo em aberto ao fim do mês (passivo de pontos).
+      - name: cum_credited_points
+        description: Pontos creditados acumulados desde o início.
+      - name: cum_migrated_points
+        description: Pontos migrados acumulados.
+      - name: breakage_new_program_realized_pct
+        description: "Breakage realizado do programa novo (expirados / creditados, acumulado). 0% porque nenhum crédito venceu (validade de 24 meses, primeiro vencimento em 25/09/2027)."
+      - name: breakage_migrated_realized_pct
+        description: "Breakage realizado do saldo migrado (expirados / migrados, acumulado). 19,8% em set/2026, subindo ~2 p.p. por mês."
+      - name: expiration_rate_on_opening_balance_pct
+        description: "Pontos expirados no mês / saldo de abertura. Indicador de acompanhamento, não é breakage."
+      - name: expired_to_redeemed_pct
+        description: "Expirados no mês / resgatados no mês. NÃO é breakage. Existe para testar a hipótese do '40%': 36% a 44% em fev-abr/2026."
+
+  - name: mart_crm_pix_launch_adoption
+    description: >
+      Adoção do Pix por exposição à comunicação de lançamento. Grão: 1 linha por segmento de exposição x histórico de resgate.
+      DESCRITIVO: sem grupo de controle, não mede efeito causal. Adoção = cliente com ao menos 1 resgate Pix efetivo até set/2026.
+    config:
+      meta:
+        grain: "segmento de exposição x had_prior_redemption"
+        business_questions:
+          - "A comunicação de lançamento explica a adoção do Pix?"
+        caveat: "Descritivo. control_group 100% vazio: não há grupo de controle para efeito causal."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [exposure_segment, had_prior_redemption]
+    columns:
+      - name: exposure_segment
+        description: Exposição ao CRM na janela do lançamento (27/05 a 04/06/2026).
+        tests: [not_null]
+      - name: had_prior_redemption
+        description: Cliente já tinha feito resgate efetivo antes do lançamento do Pix. Controla parte do viés de engajamento.
+      - name: customers
+        description: Clientes no segmento.
+      - name: pix_adopters
+        description: Clientes do segmento com ao menos 1 Pix efetivo.
+      - name: pix_adoption_pct
+        description: "% de clientes do segmento que usaram o Pix."
+
+  - name: mart_crm_pix_launch_timing
+    description: "Tempo entre o e-mail de lançamento e o primeiro Pix, para quem recebeu e usou. Grão: 1 linha por janela. Descritivo."
+    config:
+      meta:
+        grain: "1 linha por janela de tempo"
+        business_questions:
+          - "Quem recebeu o e-mail de lançamento usou o Pix logo em seguida?"
+    columns:
+      - name: timing_window
+        description: "PK. Janela entre o primeiro envio do e-mail e o primeiro Pix efetivo."
+        tests: [unique, not_null]
+      - name: customers
+        description: Clientes na janela.
+      - name: customers_pct
+        description: "% dos clientes que receberam o e-mail e usaram o Pix."
+
+  - name: mart_redemption_economics
+    description: >
+      Custo por ponto por modalidade, antes e depois do Pix. Grão: 1 linha por período x categoria estrita.
+      HIPÓTESE DECLARADA: custo ≈ (valor do produto - dinheiro pago pelo cliente) / pontos. Preço pago pelo banco por ponto
+      não está nos dados; o enunciado diz que é menor que o custo de aéreas.
+    config:
+      meta:
+        grain: "period x goal_category_strict"
+        business_questions:
+          - "Quanto custa cada modalidade de resgate por ponto?"
+          - "O Pix substituiu ou somou resgates?"
+        caveat: "Custo estimado pelo valor do produto; preço do banco por ponto desconhecido."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [period, goal_category_strict]
+    columns:
+      - name: period
+        description: "antes_do_pix (01/02 a 26/05/2026) ou depois_do_pix (27/05 a 30/09/2026)."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [antes_do_pix, depois_do_pix]
+      - name: goal_category_strict
+        description: "Modalidade na visão estrita: aereas, varejo, agencia_viagens, transferencia_parceiro, pix."
+      - name: redemptions
+        description: Resgates efetivos no período.
+      - name: redeemed_points
+        description: Pontos resgatados no período (líquidos).
+      - name: avg_monthly_points
+        description: Pontos resgatados por mês médio de 30,4 dias.
+      - name: product_value_brl
+        description: Valor dos produtos resgatados (R$).
+      - name: customer_cash_brl
+        description: Dinheiro pago pelos clientes junto com os pontos (R$).
+      - name: value_per_point_brl
+        description: Valor de prateleira por ponto (R$), sem descontar o dinheiro pago pelo cliente.
+      - name: cost_per_point_brl
+        description: Custo estimado do programa por ponto resgatado (R$).
+      - name: period_days
+        description: Dias do período, usados para a média mensal.
+
+  - name: mart_data_profile
+    description: >
+      Perfil dos dados: as descobertas da exploração inicial como métricas reproduzíveis (fuso do CRM, pagamentos
+      divididos, saldo por cliente, dia atípico). Grão: 1 linha por métrica. Só contagens agregadas.
+    config:
+      meta:
+        grain: "1 linha por métrica"
+        business_questions:
+          - "Quais problemas de qualidade os dados têm?"
+          - "Como sabemos que o CRM está em UTC?"
+          - "Por que o saldo e o nível de cartão são por cliente?"
+    tests:
+      # Descobertas que sustentam decisões do modelo: se mudarem, a decisão precisa ser revista.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "value = 0"
+          config:
+            where: "metric = 'customers_negative_balance_last_month'"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "value = 100"
+          config:
+            where: "metric in ('orders_user_id_null_pct', 'crm_control_group_null_pct')"
+    columns:
+      - name: metric
+        description: "PK. Nome da métrica."
+        tests: [unique, not_null]
+      - name: value
+        description: Valor da métrica (contagem ou %).
+        tests: [not_null]
+      - name: description
+        description: O que a métrica mede e por que importa.

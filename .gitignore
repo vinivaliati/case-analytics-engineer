@@ -3,3 +3,15 @@ storytelling_diretoria.md
 .claude/
 linha_do_tempo.sh
 .env
+.venv/
+entrega/dbt/target/
+entrega/dbt/logs/
+entrega/dbt/dbt_packages/
+entrega/dbt/*.duckdb
+entrega/dbt/*.duckdb.wal
+entrega/dbt/.user.yml
+.streamlit/secrets.toml
+entrega/dashboard/.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.pytest_cache/

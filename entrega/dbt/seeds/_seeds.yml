@@ -1,0 +1,83 @@
+version: 2
+
+seeds:
+  - name: card_classes
+    description: "Ordem dos níveis de cartão, informada pelo time de dados: Essencial < Gold < Platinum < Platinum Elo < Infinite < Black."
+    config:
+      column_types:
+        card_class: varchar
+        card_class_rank: integer
+    columns:
+      - name: card_class
+        description: Nome do nível.
+        tests: [unique, not_null]
+      - name: card_class_rank
+        description: "1 = mais simples, 6 = mais alto."
+        tests: [unique, not_null]
+
+  - name: goal_categories
+    description: >
+      Classificação de cada produto de resgate para as metas contratuais (aéreas >= 50%, varejo >= 20% dos pontos resgatados).
+      Duas visões: 'contract' reproduz a definição do relatório do operador (category_macro da origem, ±1 p.p.);
+      'strict' tira do varejo as transferências a parceiros e a agência de viagens. Tabela de referência de regra de negócio. Neste case é materializada como seed dbt (schema seeds) por não haver sistema de origem; em produção seria uma tabela de referência governada no warehouse, mantida pelo dono do negócio (ex.: time do programa), com histórico de alterações, lida pelo dbt como source.
+    config:
+      column_types:
+        supplier_name: varchar
+        product_type: varchar
+        goal_category_contract: varchar
+        goal_category_strict: varchar
+        is_redemption: boolean
+        rationale: varchar
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [supplier_name, product_type]
+    columns:
+      - name: goal_category_contract
+        description: "Visão oficial (definição do operador): aereas, varejo, pix ou fora_da_meta."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [aereas, varejo, pix, fora_da_meta]
+      - name: goal_category_strict
+        description: "Visão de sensibilidade: varejo só com produto, sem transferências e sem agência de viagens."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [aereas, varejo, agencia_viagens, transferencia_parceiro, pix, fora_da_meta]
+      - name: is_redemption
+        description: "Falso para compra de pontos: não entra no denominador das metas."
+        tests: [not_null]
+      - name: rationale
+        description: Justificativa da classificação.
+
+  - name: calendar_events
+    description: >
+      Eventos de negócio que explicam ou distorcem séries (lançamentos, dias atípicos). Tabela de referência governada:
+      em produção seria mantida pela área de negócio no warehouse; aqui é seed por não haver sistema de origem.
+      evidence_status separa o que está confirmado do que é hipótese.
+    config:
+      column_types:
+        event_date: date
+        event_type: varchar
+        event_name: varchar
+        description: varchar
+        evidence_status: varchar
+    columns:
+      - name: event_date
+        description: Data do evento (local).
+        tests: [unique, not_null]
+      - name: event_type
+        description: "lancamento ou atipico."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [lancamento, atipico]
+      - name: evidence_status
+        description: "confirmado ou hipotese_a_validar_com_negocio."
+        tests:
+          - accepted_values:
+              arguments:
+                values: [confirmado, hipotese_a_validar_com_negocio]

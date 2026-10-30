@@ -1,0 +1,2 @@
+# Dados do case: preservar bytes (LF) para o SHA-256 bater com o MANIFESTO em qualquer sistema.
+*.csv text eol=lf

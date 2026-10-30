@@ -1,0 +1,13 @@
+supplier_name,product_type,goal_category_contract,goal_category_strict,is_redemption,rationale
+Voa Linhas Aereas,PASSAGEM,aereas,aereas,true,Passagem aérea de companhia
+Ceu Azul Milhas,PASSAGEM,aereas,aereas,true,Passagem aérea de companhia
+RotaSul Aerea,PASSAGEM,aereas,aereas,true,Passagem aérea de companhia
+Casa&Cia,PRODUTO,varejo,varejo,true,Produto de varejo
+MegaMagazine,PRODUTO,varejo,varejo,true,Produto de varejo
+Loja Tech10,PRODUTO,varejo,varejo,true,Produto de varejo
+Casa&Cia (via MegaMagazine),PRODUTO,varejo,varejo,true,Produto de varejo revendido (responsável MegaMagazine)
+Decola Viagens,PRODUTO,varejo,agencia_viagens,true,Agência de viagens cadastrada como Varejo/PRODUTO; natureza a confirmar com o negócio
+Nuvem Recompensas,TRANSFERENCIA,varejo,transferencia_parceiro,true,Transferência para programa parceiro; o operador soma em varejo
+Pontos Max,TRANSFERENCIA,varejo,transferencia_parceiro,true,Transferência para programa parceiro; o operador soma em varejo
+Pix Pontua+,TRANSFERENCIA,pix,pix,true,Pontos no Pix (lançado em 27/05/2026)
+Compra Pontos Pontua+,COMPRA_PONTOS,fora_da_meta,fora_da_meta,false,Cliente compra pontos com dinheiro; não debita pontos e não é resgate
